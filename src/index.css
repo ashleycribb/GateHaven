@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Valheim Nordic Wood & Parchment Tokens */
+  --vh-bark-deep: #171310;
+  --vh-wood-panel: #1F1A15;
+  --vh-wood-raised: #29221B;
+  --vh-iron-border: #5A4B3A;
+  --vh-gold-accent: #C99A4E;
+  --vh-parchment: #E8DEC8;
+  --vh-parchment-muted: #B6A78E;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+  background-color: var(--vh-bark-deep);
+  color: var(--vh-parchment);
+  overscroll-behavior: none;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Clear, restrained Nordic ember-gold focus outline for Gamepad D-pad & keyboard menu navigation */
+[data-gamepad-focus="true"] {
+  outline: 2px solid #D9A756 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(201, 154, 78, 0.28) !important;
+}
+
+/* Subtle rustic scrollbars inside modals */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(23, 19, 16, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(122, 102, 78, 0.55);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(164, 134, 96, 0.75);
+}
