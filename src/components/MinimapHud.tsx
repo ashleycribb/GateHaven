@@ -700,20 +700,20 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
             type="button"
             onClick={() => setCollapsed(false)}
             title="Show Mini-Map"
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-700/90 bg-slate-950/94 px-3 py-2 text-xs font-semibold text-slate-200 shadow-lg hover:bg-slate-900 hover:text-white cursor-pointer"
+            className="flex items-center gap-1.5 whitespace-nowrap rounded-xl border border-[#5E4D3B] bg-[#1A1511]/94 px-3 py-2 text-xs font-semibold text-[#EDE2CC] shadow-lg hover:bg-[#272019] cursor-pointer"
           >
-            <MapIcon className="h-3.5 w-3.5 text-sky-400" />
+            <MapIcon className="h-3.5 w-3.5 text-[#D4A65C]" />
             <span>{hudMeta.isDungeon ? `Dungeon Map (${hudMeta.exploredPercent}%)` : 'World Map'}</span>
           </button>
         ) : (
-          <div className="w-[184px] sm:w-[202px] overflow-hidden rounded-xl border border-slate-700/90 bg-slate-950/94 text-slate-100 shadow-xl">
+          <div className="w-[184px] sm:w-[202px] overflow-hidden rounded-xl border border-[#5E4D3B] bg-[#1A1511]/94 text-[#EDE2CC] shadow-xl">
             {/* Compact Header */}
-            <div className="flex items-center justify-between gap-1 border-b border-slate-800 px-2.5 py-1.5">
+            <div className="flex items-center justify-between gap-1 border-b border-[#3F3327] bg-[#221C16] px-2.5 py-1.5">
               <div className="min-w-0">
-                <p className="truncate text-[11px] font-bold text-white leading-tight">
+                <p className="font-[var(--font-display)] truncate text-[11px] font-bold text-[#F3E9D6] leading-tight">
                   {hudMeta.isDungeon ? 'Dungeon Auto-Map' : 'World Map'}
                 </p>
-                <p className="truncate text-[10px] text-slate-400 tabular-nums leading-tight">
+                <p className="truncate text-[10px] text-[#B8A990] tabular-nums leading-tight">
                   {hudMeta.isDungeon
                     ? hudMeta.dungeonRevealed
                       ? 'Full Map Active'
@@ -726,7 +726,7 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                   type="button"
                   onClick={() => setZoom((z) => (z === 1 ? 2 : 1))}
                   title={zoom === 1 ? 'Zoom In (2×)' : 'Full Overview (1×)'}
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
                 >
                   {zoom === 1 ? <ZoomIn className="h-3.5 w-3.5" /> : <ZoomOut className="h-3.5 w-3.5" />}
                 </button>
@@ -734,7 +734,7 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                   type="button"
                   onClick={() => onSetExpanded(true)}
                   title="Expand Full Map (Key M)"
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
                 >
                   <Expand className="h-3.5 w-3.5" />
                 </button>
@@ -742,7 +742,7 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                   type="button"
                   onClick={() => setCollapsed(true)}
                   title="Minimize Map"
-                  className="flex h-6 w-6 items-center justify-center rounded-md text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"
+                  className="flex h-6 w-6 items-center justify-center rounded-md text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
                 >
                   <Minimize2 className="h-3.5 w-3.5" />
                 </button>
@@ -751,7 +751,7 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
 
             {/* Live Map Canvas */}
             <div
-              className="relative aspect-square w-full cursor-pointer bg-[#060A12]"
+              className="relative aspect-square w-full cursor-pointer bg-[#120F0C]"
               onClick={() => onSetExpanded(true)}
               title="Click or press M to expand full map"
             >
@@ -759,15 +759,15 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
             </div>
 
             {/* Footer: Coords + Dungeon Map Scroll Action */}
-            <div className="border-t border-slate-800 px-2.5 py-1.5 space-y-1.5">
-              <div className="flex items-center justify-between text-[10px] text-slate-400 tabular-nums">
+            <div className="border-t border-[#3F3327] bg-[#1E1813] px-2.5 py-1.5 space-y-1.5">
+              <div className="flex items-center justify-between text-[10px] text-[#B8A990] tabular-nums">
                 <span>
                   X {hudMeta.playerX} · Z {hudMeta.playerZ}
                 </span>
                 <button
                   type="button"
                   onClick={() => onSetExpanded(true)}
-                  className="font-semibold text-sky-400 hover:text-sky-300 cursor-pointer"
+                  className="font-semibold text-[#D9AD62] hover:text-[#EBC47D] cursor-pointer"
                 >
                   [M] Full Map
                 </button>
@@ -778,13 +778,13 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                   <button
                     type="button"
                     onClick={onUseDungeonMapScroll}
-                    className="flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-400 px-2.5 py-1.5 text-[11px] font-bold text-slate-950 hover:bg-amber-300 transition-colors cursor-pointer"
+                    className="flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E2BA72] bg-[#B7833B] px-2.5 py-1.5 text-[11px] font-bold text-[#1A140F] hover:bg-[#C89347] transition-colors cursor-pointer"
                   >
                     <Scroll className="h-3.5 w-3.5" />
                     Use Dungeon Map ({dungeonMapScrolls})
                   </button>
                 ) : (
-                  <p className="text-[10px] leading-snug text-slate-400">
+                  <p className="text-[10px] leading-snug text-[#B0A188]">
                     Uncharted · Explore rooms or find the Map Pedestal
                   </p>
                 )
@@ -797,22 +797,23 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
       {/* EXPANDED FULL MAP OVERLAY ([M] or Click Expand) */}
       {expanded && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/86 p-4"
+          data-gamepad-scope="modal"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D0A08]/84 p-4"
           onClick={() => onSetExpanded(false)}
         >
           <div
-            className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-700 bg-slate-950 text-slate-100 shadow-2xl"
+            className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-[#65523D] bg-[#1C1713] text-[#EDE2CC] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 px-5 py-3.5">
+            <div className="flex items-center justify-between border-b border-[#46392C] bg-[#231C16] px-5 py-3.5">
               <div className="flex items-center gap-2.5 min-w-0">
-                <Compass className="h-5 w-5 shrink-0 text-sky-400" />
+                <Compass className="h-5 w-5 shrink-0 text-[#D4A65C]" />
                 <div className="min-w-0">
-                  <h2 className="truncate font-[var(--font-display)] text-lg font-bold text-white">
+                  <h2 className="truncate font-[var(--font-display)] text-lg font-bold text-[#F3E9D6]">
                     {locationTitle}
                   </h2>
-                  <p className="text-xs text-slate-400 tabular-nums">
+                  <p className="text-xs text-[#B8A990] tabular-nums">
                     {hudMeta.isDungeon
                       ? hudMeta.dungeonRevealed
                         ? 'Dungeon Map Active · All Procedural Rooms Revealed'
@@ -825,7 +826,7 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                 type="button"
                 onClick={() => onSetExpanded(false)}
                 aria-label="Close Full Map"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white cursor-pointer"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -833,7 +834,7 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
 
             {/* 2-Column Body: Large Map Canvas + Cartographic Directory & Legend */}
             <div className="grid flex-1 grid-cols-1 gap-5 overflow-y-auto p-5 md:grid-cols-[minmax(0,1fr)_236px]">
-              <div className="relative aspect-square w-full max-w-[440px] justify-self-center overflow-hidden rounded-xl border border-slate-800 bg-[#060A12]">
+              <div className="relative aspect-square w-full max-w-[440px] justify-self-center overflow-hidden rounded-xl border border-[#4E4032] bg-[#120F0C]">
                 <canvas ref={fullCanvasRef} className="block h-full w-full" />
               </div>
 
@@ -841,17 +842,17 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                 <div className="space-y-4">
                   {/* Dungeon Exploration Progress & Scroll Activation */}
                   {hudMeta.isDungeon && (
-                    <div className="space-y-2.5 border-b border-slate-800 pb-4">
+                    <div className="space-y-2.5 border-b border-[#46392C] pb-4">
                       <div className="flex items-center justify-between text-xs tabular-nums">
-                        <span className="font-semibold text-slate-300">Exploration</span>
-                        <span className="font-bold text-sky-300">
+                        <span className="font-semibold text-[#D6C8AF]">Exploration</span>
+                        <span className="font-bold text-[#D9AD62]">
                           {hudMeta.dungeonRevealed ? '100% (Mapped)' : `${hudMeta.exploredPercent}%`}
                         </span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div className="h-2 overflow-hidden rounded bg-[#2D251E]">
                         <div
                           className={`h-full transition-all ${
-                            hudMeta.dungeonRevealed ? 'bg-amber-400' : 'bg-sky-400'
+                            hudMeta.dungeonRevealed ? 'bg-[#D4A65C]' : 'bg-[#9E875E]'
                           }`}
                           style={{ width: `${hudMeta.exploredPercent}%` }}
                         />
@@ -862,16 +863,16 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                           <button
                             type="button"
                             onClick={onUseDungeonMapScroll}
-                            className="mt-1 flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg bg-amber-400 px-3 py-2 text-xs font-bold text-slate-950 hover:bg-amber-300 transition-colors cursor-pointer"
+                            className="mt-1 flex w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border border-[#E2BA72] bg-[#B7833B] px-3 py-2 text-xs font-bold text-[#1A140F] hover:bg-[#C89347] transition-colors cursor-pointer"
                           >
                             <Scroll className="h-3.5 w-3.5" />
                             Use Dungeon Map Scroll ({dungeonMapScrolls})
                           </button>
                         ) : (
-                          <p className="text-xs leading-relaxed text-slate-400">
+                          <p className="text-xs leading-relaxed text-[#B8A990]">
                             Dark corridors populate automatically as you walk. Find the glowing{' '}
-                            <strong className="text-amber-300">Map Pedestal</strong> inside this
-                            dungeon—or buy a <strong className="text-slate-200">Dungeon Map Scroll</strong>{' '}
+                            <strong className="text-[#D9AD62]">Map Pedestal</strong> inside this
+                            dungeon—or buy a <strong className="text-[#EDE2CC]">Dungeon Map Scroll</strong>{' '}
                             from Kael in Elderglen—to reveal all rooms at once.
                           </p>
                         )
@@ -881,15 +882,15 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
 
                   {/* Discovered Rooms (Dungeon) or Landmarks (World) */}
                   {hudMeta.isDungeon ? (
-                    <div className="space-y-2 border-b border-slate-800 pb-4">
-                      <p className="text-xs font-semibold text-slate-300">Procedural Chambers</p>
+                    <div className="space-y-2 border-b border-[#46392C] pb-4">
+                      <p className="text-xs font-semibold text-[#D6C8AF]">Procedural Chambers</p>
                       <ul className="space-y-1.5 text-xs">
                         {hudMeta.discoveredRooms.map((r) => (
                           <li key={r.id} className="flex items-center justify-between gap-2">
-                            <span className={r.discovered ? 'text-slate-100' : 'text-slate-500'}>
+                            <span className={r.discovered ? 'text-[#EFE4CE]' : 'text-[#7F7362]'}>
                               {r.discovered ? r.label : 'Uncharted Chamber'}
                             </span>
-                            <span className="text-[11px] text-slate-400">
+                            <span className="text-[11px] text-[#B0A188]">
                               {r.discovered
                                 ? r.kind === 'boss'
                                   ? 'Boss'
@@ -904,11 +905,11 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                     </div>
                   ) : (
                     hudMeta.portalList.length > 0 && (
-                      <div className="space-y-2 border-b border-slate-800 pb-4">
-                        <p className="text-xs font-semibold text-slate-300">Realm Landmarks</p>
+                      <div className="space-y-2 border-b border-[#46392C] pb-4">
+                        <p className="text-xs font-semibold text-[#D6C8AF]">Realm Landmarks</p>
                         <ul className="space-y-1.5 text-xs">
                           {hudMeta.portalList.slice(0, 7).map((p) => (
-                            <li key={p.id} className="flex items-center gap-2 text-slate-200">
+                            <li key={p.id} className="flex items-center gap-2 text-[#E8DCC5]">
                               <span
                                 className="inline-block h-2.5 w-2.5 shrink-0 rotate-45"
                                 style={{ backgroundColor: p.color }}
@@ -923,47 +924,47 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
 
                   {/* Clean Cartographic Legend */}
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-300">Map Key</p>
-                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-slate-300">
+                    <p className="text-xs font-semibold text-[#D6C8AF]">Map Key</p>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] text-[#CFC2AA]">
                       <span className="flex items-center gap-1.5">
-                        <span className="inline-block h-2.5 w-2.5 rounded-xs bg-white ring-1 ring-sky-400" />
+                        <span className="inline-block h-2.5 w-2.5 rounded-xs bg-[#F3E9D6] ring-1 ring-[#C99A4E]" />
                         You
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="inline-block h-2.5 w-2.5 rotate-45 bg-emerald-400" />
+                        <span className="inline-block h-2.5 w-2.5 rotate-45 bg-[#7EA56E]" />
                         {hudMeta.isDungeon ? 'Exit Portal' : 'Portals'}
                       </span>
                       <span className="flex items-center gap-1.5">
-                        <span className="inline-block h-2.5 w-2.5 bg-yellow-400" />
+                        <span className="inline-block h-2.5 w-2.5 bg-[#D4A65C]" />
                         Loot Chest ({hudMeta.unopenedChests})
                       </span>
                       {hudMeta.isDungeon ? (
                         <>
                           <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-amber-400" />
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#DFB461]" />
                             Map Pedestal
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 bg-orange-500" />
+                            <span className="inline-block h-2.5 w-2.5 bg-[#C46B34]" />
                             Lava Trap
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-500 ring-1 ring-white" />
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#B54B3E] ring-1 ring-[#F3E9D6]" />
                             Dungeon Boss
                           </span>
                         </>
                       ) : (
                         <>
                           <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rotate-45 bg-sky-400" />
+                            <span className="inline-block h-2.5 w-2.5 rotate-45 bg-[#CBB58D]" />
                             Shrine
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-teal-400" />
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#77A89D]" />
                             Villagers
                           </span>
                           <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-rose-400" />
+                            <span className="inline-block h-2.5 w-2.5 rounded-full bg-[#C76759]" />
                             Hostiles
                           </span>
                         </>
@@ -972,9 +973,9 @@ export const MinimapHud: React.FC<MinimapHudProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-[11px] text-slate-400">
+                <div className="flex items-center justify-between border-t border-[#46392C] pt-3 text-[11px] text-[#B0A188]">
                   <span>Scrolls: {dungeonMapScrolls}</span>
-                  <span>Press M or Esc to close</span>
+                  <span>Press M / Esc / B to close</span>
                 </div>
               </div>
             </div>

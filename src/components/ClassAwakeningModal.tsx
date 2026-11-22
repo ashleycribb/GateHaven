@@ -39,19 +39,22 @@ export const ClassAwakeningModal: React.FC<ClassAwakeningModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/82 p-4">
-      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-amber-400/60 bg-slate-950 text-slate-100 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-slate-800 px-6 py-5">
+    <div
+      data-gamepad-scope="modal"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D0A08]/84 p-4"
+    >
+      <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-[#C99A4E]/70 bg-[#1C1713] text-[#EDE2CC] shadow-2xl">
+        <div className="flex items-start justify-between border-b border-[#46392C] bg-[#231C16] px-6 py-5">
           <div>
-            <p className="text-xs font-semibold tracking-wide text-amber-400">
+            <p className="text-xs font-semibold tracking-wide text-[#D4A65C]">
               System Evaluation · Level {level} Class Awakening
             </p>
-            <h2 className="mt-1 font-[var(--font-display)] text-2xl font-bold text-white">
+            <h2 className="mt-1 font-[var(--font-display)] text-2xl font-bold text-[#F3E9D6]">
               Choose Your Class
             </h2>
-            <p className="mt-1.5 text-sm text-slate-300">
+            <p className="mt-1.5 text-sm text-[#CFC2AA]">
               Based on your journey so far, the System recommends{' '}
-              <span className="font-bold text-amber-300">
+              <span className="font-bold text-[#E3B86A]">
                 {CLASS_LIST.find((c) => c.id === recommended)?.name}
               </span>
               . You may accept the recommendation or pick any class below.
@@ -60,7 +63,7 @@ export const ClassAwakeningModal: React.FC<ClassAwakeningModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
             aria-label="Close class modal"
           >
             <X className="h-4 w-4" />
@@ -69,11 +72,11 @@ export const ClassAwakeningModal: React.FC<ClassAwakeningModalProps> = ({
 
         <div className="flex-1 space-y-5 overflow-y-auto p-6">
           {/* Playstyle Analysis Strip */}
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-slate-800 pb-3 text-xs text-slate-400">
-            <span className="font-semibold text-slate-200">Playstyle Log:</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-[#46392C] pb-3 text-xs text-[#B8A990]">
+            <span className="font-semibold text-[#E8DCC5]">Playstyle Log:</span>
             {statSummary.map((s) => (
               <span key={s.label} className="tabular-nums">
-                {s.label}: <strong className="text-slate-100">{s.value}</strong>
+                {s.label}: <strong className="text-[#F3E9D6]">{s.value}</strong>
               </span>
             ))}
           </div>
@@ -88,19 +91,21 @@ export const ClassAwakeningModal: React.FC<ClassAwakeningModalProps> = ({
                   key={cls.id}
                   type="button"
                   onClick={() => setSelected(cls.id as Exclude<CharacterClassId, 'unawakened'>)}
-                  className={`flex flex-col rounded-xl border p-4 text-left transition-colors ${
+                  className={`flex flex-col rounded-xl border p-4 text-left transition-colors cursor-pointer ${
                     isSelected
-                      ? 'border-amber-400 bg-slate-900'
-                      : 'border-slate-800 bg-slate-900/50 hover:border-slate-600'
+                      ? 'border-[#D4A65C] bg-[#30261D]'
+                      : 'border-[#4D3F31] bg-[#241D17] hover:border-[#6F5A43]'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-base font-bold text-white">{cls.name}</span>
-                    <span className="text-xs font-semibold text-slate-400">
-                      {isRec ? 'System Recommended' : cls.title}
+                    <span className="font-[var(--font-display)] text-base font-bold text-[#F3E9D6]">
+                      {cls.name}
+                    </span>
+                    <span className="text-xs font-semibold text-[#D4A65C]">
+                      {isRec ? 'Recommended' : cls.title}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-xs leading-relaxed text-slate-300">{cls.description}</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-[#CFC2AA]">{cls.description}</p>
                   <p className="mt-2.5 text-xs font-semibold" style={{ color: cls.accentColor }}>
                     {cls.bonusSummary}
                   </p>
@@ -110,18 +115,18 @@ export const ClassAwakeningModal: React.FC<ClassAwakeningModalProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-between border-t border-slate-800 px-6 py-4">
+        <div className="flex items-center justify-between border-t border-[#46392C] bg-[#231C16] px-6 py-4">
           <button
             type="button"
             onClick={onClose}
-            className="whitespace-nowrap rounded-lg px-4 py-2 text-xs font-semibold text-slate-400 hover:bg-slate-900 hover:text-white"
+            className="whitespace-nowrap rounded-lg border border-[#5B4B3A] bg-[#261F18] px-4 py-2 text-xs font-semibold text-[#D6C8AF] hover:bg-[#332920] cursor-pointer"
           >
             Decide Later
           </button>
           <button
             type="button"
             onClick={() => onSelectClass(selected)}
-            className="flex items-center gap-2 whitespace-nowrap rounded-lg bg-amber-400 px-5 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-300"
+            className="flex items-center gap-2 whitespace-nowrap rounded-lg border border-[#E2BA72] bg-[#B7833B] px-5 py-2.5 text-sm font-bold text-[#1A140F] transition-colors hover:bg-[#C89347] cursor-pointer"
           >
             <Check className="h-4 w-4" />
             Awaken as {CLASS_LIST.find((c) => c.id === selected)?.name}

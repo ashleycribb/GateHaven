@@ -41,20 +41,23 @@ export const ShrineModal: React.FC<ShrineModalProps> = ({
           : 25;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4">
-      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-sky-400/50 bg-slate-950 text-slate-100 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-4">
+    <div
+      data-gamepad-scope="modal"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#0D0A08]/82 p-4"
+    >
+      <div className="flex max-h-[88vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-[#725C43] bg-[#1C1713] text-[#EDE2CC] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-[#46392C] bg-[#231C16] px-6 py-4">
           <div>
-            <p className="text-xs font-semibold text-sky-400">Awakening Shrine · Safe Sanctuary</p>
-            <h2 className="font-[var(--font-display)] text-xl font-bold text-white">
-              Shrine of Soulbinding & Rebirth
+            <p className="text-xs font-semibold text-[#D4A65C]">Awakening Shrine · Safe Sanctuary</p>
+            <h2 className="font-[var(--font-display)] text-xl font-bold text-[#F3E9D6]">
+              Shrine of Soulbinding &amp; Rebirth
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close Shrine"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -66,21 +69,21 @@ export const ShrineModal: React.FC<ShrineModalProps> = ({
             <button
               type="button"
               onClick={onRestAndHeal}
-              className="flex flex-col items-start gap-1 rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-left hover:border-emerald-400/60 hover:bg-slate-900"
+              className="flex flex-col items-start gap-1 rounded-xl border border-[#4D3F31] bg-[#241D17] p-4 text-left hover:border-[#7EA56E] hover:bg-[#2C241C] cursor-pointer"
             >
-              <Heart className="h-4 w-4 text-emerald-400" />
-              <span className="text-sm font-bold text-white">Restore Vitals</span>
-              <span className="text-xs text-slate-400">Free full HP, Stamina & Hunger</span>
+              <Heart className="h-4 w-4 text-[#98B986]" />
+              <span className="text-sm font-bold text-[#F3E9D6]">Restore Vitals</span>
+              <span className="text-xs text-[#B8A990]">Free full HP, Stamina &amp; Hunger</span>
             </button>
 
             <button
               type="button"
               onClick={onSetHomeSpawn}
-              className="flex flex-col items-start gap-1 rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-left hover:border-sky-400/60 hover:bg-slate-900"
+              className="flex flex-col items-start gap-1 rounded-xl border border-[#4D3F31] bg-[#241D17] p-4 text-left hover:border-[#C99A4E] hover:bg-[#2C241C] cursor-pointer"
             >
-              <Home className="h-4 w-4 text-sky-400" />
-              <span className="text-sm font-bold text-white">Bind Home Spawn</span>
-              <span className="text-xs text-slate-400">Respawn here after death</span>
+              <Home className="h-4 w-4 text-[#D4A65C]" />
+              <span className="text-sm font-bold text-[#F3E9D6]">Bind Home Spawn</span>
+              <span className="text-xs text-[#B8A990]">Respawn here after death</span>
             </button>
 
             <button
@@ -89,13 +92,13 @@ export const ShrineModal: React.FC<ShrineModalProps> = ({
               onClick={() => onRepairAll(repairCost)}
               className={`flex flex-col items-start gap-1 rounded-xl border p-4 text-left ${
                 needsRepair && rpg.gold >= repairCost
-                  ? 'border-slate-800 bg-slate-900/70 hover:border-amber-400/60'
-                  : 'cursor-not-allowed border-slate-800/60 bg-slate-900/30 opacity-60'
+                  ? 'border-[#4D3F31] bg-[#241D17] hover:border-[#D4A65C] hover:bg-[#2C241C] cursor-pointer'
+                  : 'cursor-not-allowed border-[#3D3126] bg-[#1F1914] opacity-60'
               }`}
             >
-              <Wrench className="h-4 w-4 text-amber-400" />
-              <span className="text-sm font-bold text-white">Repair Gear ({repairCost}g)</span>
-              <span className="text-xs text-slate-400">
+              <Wrench className="h-4 w-4 text-[#DFB86C]" />
+              <span className="text-sm font-bold text-[#F3E9D6]">Repair Gear ({repairCost}g)</span>
+              <span className="text-xs text-[#B8A990]">
                 {needsRepair ? 'Restore all durability' : 'All gear at 100%'}
               </span>
             </button>
@@ -104,17 +107,18 @@ export const ShrineModal: React.FC<ShrineModalProps> = ({
           {/* Soulbinding Section */}
           <div>
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white">Soulbind Equipment</h3>
-              <span className="text-xs text-slate-400 tabular-nums">
-                Gold: <strong className="text-amber-300">{rpg.gold}g</strong>
+              <h3 className="text-sm font-bold text-[#F3E9D6]">Soulbind Equipment</h3>
+              <span className="text-xs text-[#B8A990] tabular-nums">
+                Gold: <strong className="text-[#D9AD62]">{rpg.gold}g</strong>
               </span>
             </div>
-            <p className="mt-1 text-xs text-slate-400">
-              Soulbound items stay with you when you die and travel across dimensional portals to other worlds.
+            <p className="mt-1 text-xs text-[#B8A990]">
+              Soulbound items stay with you when you die and travel across dimensional portals to
+              other worlds.
             </p>
 
             {allUnbound.length === 0 ? (
-              <div className="mt-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4 text-xs text-slate-400">
+              <div className="mt-3 rounded-xl border border-[#4D3F31] bg-[#241D17] p-4 text-xs text-[#B8A990]">
                 All of your current gear is already Soulbound!
               </div>
             ) : (
@@ -125,11 +129,11 @@ export const ShrineModal: React.FC<ShrineModalProps> = ({
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3"
+                      className="flex items-center justify-between gap-3 rounded-xl border border-[#4D3F31] bg-[#241D17] px-4 py-3"
                     >
                       <div>
-                        <p className="text-sm font-bold text-white">{item.name}</p>
-                        <p className="text-xs text-slate-400">
+                        <p className="text-sm font-bold text-[#F3E9D6]">{item.name}</p>
+                        <p className="text-xs text-[#B8A990]">
                           {item.rarity} · {item.slot}
                         </p>
                       </div>
@@ -139,8 +143,8 @@ export const ShrineModal: React.FC<ShrineModalProps> = ({
                         onClick={() => onSoulbindItem(item.id, cost)}
                         className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3.5 py-2 text-xs font-bold ${
                           canAfford
-                            ? 'bg-sky-500 text-slate-950 hover:bg-sky-400'
-                            : 'cursor-not-allowed bg-slate-800 text-slate-500'
+                            ? 'border border-[#C99A4E]/75 bg-[#9C6C30] text-[#FDF6E8] hover:bg-[#AE7A39] cursor-pointer'
+                            : 'cursor-not-allowed bg-[#2D251E] text-[#7D7160]'
                         }`}
                       >
                         <Lock className="h-3.5 w-3.5" />

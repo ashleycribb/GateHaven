@@ -69,6 +69,8 @@ export interface Vec3 {
 
 export type ShirtStyle = 'classic' | 'striped' | 'overalls' | 'hoodie';
 export type HatStyle = 'none' | 'cap' | 'sunhat' | 'crown' | 'wizard' | 'beanie';
+export type HairStyle = 'short' | 'braids' | 'long' | 'ponytail' | 'bald';
+export type BeardStyle = 'none' | 'stubble' | 'short' | 'braided' | 'full';
 
 export interface AvatarConfig {
   displayName: string;
@@ -78,6 +80,9 @@ export interface AvatarConfig {
   pantsColor: string;
   hat: HatStyle;
   hatColor: string;
+  hairStyle?: HairStyle;
+  beardStyle?: BeardStyle;
+  hairColor?: string;
 }
 
 /* ============================================================================

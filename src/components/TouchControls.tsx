@@ -80,11 +80,11 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
           }
         }}
         onTouchCancel={resetStick}
-        className="pointer-events-auto relative flex h-28 w-28 items-center justify-center rounded-full border-2 border-white/60 bg-slate-900/60 shadow-lg select-none"
+        className="pointer-events-auto relative flex h-28 w-28 items-center justify-center rounded-full border-2 border-[#C8B28E]/65 bg-[#1B1612]/72 shadow-lg select-none"
         aria-label="Movement joystick"
       >
         <div
-          className="h-12 w-12 rounded-full border border-white/80 bg-white/90 shadow-md"
+          className="h-12 w-12 rounded-full border border-[#E8D9BE]/85 bg-[#E6D7BC]/88 shadow-md"
           style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }}
         />
       </div>
@@ -96,16 +96,16 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
             <button
               type="button"
               onClick={onInteract}
-              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-white/70 bg-sky-600/95 text-white shadow-lg active:scale-95"
+              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-[#D4A65C]/75 bg-[#2A221B]/92 text-[#F3E9D6] shadow-lg active:scale-95"
               aria-label="Interact"
             >
-              <Hand className="h-4 w-4" />
+              <Hand className="h-4 w-4 text-[#D4A65C]" />
               <span className="text-[9px] font-bold">Use</span>
             </button>
             <button
               type="button"
               onClick={onCastSkill}
-              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-white/70 bg-orange-600/95 text-white shadow-lg active:scale-95"
+              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-[#C8844A]/75 bg-[#5E371E]/92 text-[#FDF3E3] shadow-lg active:scale-95"
               aria-label="Cast skill"
             >
               <Flame className="h-4 w-4" />
@@ -118,7 +118,7 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
           <button
             type="button"
             onClick={onBreak}
-            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-white/70 bg-rose-600/90 text-white shadow-lg active:scale-95"
+            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-[#C47467]/75 bg-[#6E3029]/92 text-[#FDF3E3] shadow-lg active:scale-95"
             aria-label="Attack or break block"
           >
             <Pickaxe className="h-4 w-4" />
@@ -127,7 +127,7 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
           <button
             type="button"
             onClick={onPlace}
-            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-white/70 bg-blue-600/90 text-white shadow-lg active:scale-95"
+            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-[#BFA882]/75 bg-[#463829]/92 text-[#F3E9D6] shadow-lg active:scale-95"
             aria-label="Place block"
           >
             <Hammer className="h-4 w-4" />
@@ -136,7 +136,7 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
           <button
             type="button"
             onClick={onJump}
-            className="flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 border-white/80 bg-emerald-600/95 text-white shadow-lg active:scale-95"
+            className="flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 border-[#A4C191]/80 bg-[#3C5336]/92 text-[#F3E9D6] shadow-lg active:scale-95"
             aria-label="Jump"
           >
             <ArrowUp className="h-5 w-5" />

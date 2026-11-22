@@ -37,20 +37,23 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-5 z-40 mx-auto w-full max-w-2xl px-4">
-      <div className="rounded-2xl border border-slate-700 bg-slate-950/96 p-5 text-slate-100 shadow-2xl">
+    <div
+      data-gamepad-scope="modal"
+      className="fixed inset-x-0 bottom-5 z-40 mx-auto w-full max-w-2xl px-4"
+    >
+      <div className="rounded-xl border border-[#68553F] bg-[#1C1713]/96 p-5 text-[#EDE2CC] shadow-2xl">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-              <span className="font-semibold text-sky-400">{npc.role}</span>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#B8A990]">
+              <span className="font-semibold text-[#D4A65C]">{npc.role}</span>
               <span aria-hidden="true">·</span>
               <span>{npc.personality}</span>
             </div>
-            <h3 className="mt-1 font-[var(--font-display)] text-xl font-bold text-white">
+            <h3 className="mt-1 font-[var(--font-display)] text-xl font-bold text-[#F3E9D6]">
               {npc.name}
             </h3>
-            <p className="mt-0.5 text-xs text-slate-400">{npc.backstory}</p>
+            <p className="mt-0.5 text-xs text-[#B8A990]">{npc.backstory}</p>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -58,7 +61,7 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
               type="button"
               onClick={() => onReportNpc(npc.name)}
               title="Report issue (v1 safety stub)"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-amber-300"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#B8A990] hover:bg-[#322820] hover:text-[#DFB461] cursor-pointer"
             >
               <Flag className="h-3.5 w-3.5" />
             </button>
@@ -66,7 +69,7 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
               type="button"
               onClick={onClose}
               aria-label="Close dialogue"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[#B8A990] hover:bg-[#322820] hover:text-[#F3E9D6] cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
@@ -74,8 +77,8 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
         </div>
 
         {/* Speech Box */}
-        <div className="mt-3.5 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3">
-          <p className="text-sm leading-relaxed text-slate-100">“{currentLine}”</p>
+        <div className="mt-3.5 rounded-xl border border-[#4D3F31] bg-[#251E18] px-4 py-3">
+          <p className="text-sm leading-relaxed text-[#F1E7D4]">“{currentLine}”</p>
         </div>
 
         {/* Dialogue Branches & Skill Teaching */}
@@ -97,14 +100,14 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
                   onClick={() => handleBranch(branch)}
                   className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
                     alreadyLearned
-                      ? 'cursor-default border-emerald-500/40 bg-emerald-950/50 text-emerald-300'
+                      ? 'cursor-default border-[#5D7C52]/60 bg-[#212B1E] text-[#9CC08B]'
                       : cantAfford
-                        ? 'cursor-not-allowed border-slate-800 bg-slate-900 text-slate-500'
-                        : 'border-sky-500/50 bg-sky-500/15 text-sky-200 hover:bg-sky-500/25'
+                        ? 'cursor-not-allowed border-[#3F3327] bg-[#211B16] text-[#847765]'
+                        : 'border-[#7E6647] bg-[#30261D] text-[#F1E4CD] hover:bg-[#3E3125] cursor-pointer'
                   }`}
                 >
-                  {branch.action === 'teach_skill' && <BookOpen className="h-3.5 w-3.5" />}
-                  {branch.action === 'buy_dungeon_map' && <Scroll className="h-3.5 w-3.5 text-amber-300" />}
+                  {branch.action === 'teach_skill' && <BookOpen className="h-3.5 w-3.5 text-[#D4A65C]" />}
+                  {branch.action === 'buy_dungeon_map' && <Scroll className="h-3.5 w-3.5 text-[#D9AD62]" />}
                   {alreadyLearned ? `${skillMeta?.name} (Learned)` : branch.label}
                 </button>
               );
@@ -113,9 +116,9 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
         )}
 
         {/* Footer Controls */}
-        <div className="mt-4 flex items-center justify-between border-t border-slate-800 pt-3">
-          <span className="text-xs text-slate-400 tabular-nums">
-            Your Gold: <strong className="text-amber-300">{playerGold}g</strong>
+        <div className="mt-4 flex items-center justify-between border-t border-[#46392C] pt-3">
+          <span className="text-xs text-[#B8A990] tabular-nums">
+            Your Gold: <strong className="text-[#D9AD62]">{playerGold}g</strong>
           </span>
           <div className="flex items-center gap-2">
             <button
@@ -124,7 +127,7 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
                 setBranchReply(null);
                 setLineIndex((i) => (i + 1) % allLines.length);
               }}
-              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-800"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-[#5B4B3A] bg-[#261F18] px-3.5 py-2 text-xs font-semibold text-[#E8DCC5] hover:bg-[#332920] cursor-pointer"
             >
               More Lore
               <ArrowRight className="h-3.5 w-3.5" />
@@ -132,7 +135,7 @@ export const NpcDialogueCard: React.FC<NpcDialogueCardProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="whitespace-nowrap rounded-lg bg-sky-500 px-4 py-2 text-xs font-bold text-slate-950 hover:bg-sky-400"
+              className="whitespace-nowrap rounded-lg border border-[#C99A4E]/70 bg-[#9C6C30] px-4 py-2 text-xs font-bold text-[#FDF6E8] hover:bg-[#AE7A39] cursor-pointer"
             >
               Done
             </button>
