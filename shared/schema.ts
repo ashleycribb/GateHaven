@@ -28,6 +28,8 @@ export const PlayerSchema = schema(
     weaponSlots: t.array(OwnedItemSchema),
     skillSlots: t.array(OwnedItemSchema),
     trapSlots: t.array(OwnedItemSchema),
+    landed: t.boolean().default(false),
+    boatId: t.string().default(''),
   },
   'PlayerSchema',
 );
@@ -86,10 +88,34 @@ export const TrapSchema = schema(
 );
 export type TrapState = InstanceType<typeof TrapSchema>;
 
+export const BoatSchema = schema(
+  {
+    id: t.string().default(''),
+    teamId: t.string().default('team_0'),
+    x: t.float32().default(0),
+    y: t.float32().default(0),
+    z: t.float32().default(0),
+    rotY: t.float32().default(0),
+  },
+  'BoatSchema',
+);
+export type BoatState = InstanceType<typeof BoatSchema>;
+
+export const WeatherSchema = schema(
+  {
+    kind: t.string().default(ENGINE.defaultWeatherKind),
+    wind: t.float32().default(ENGINE.weatherPresets[ENGINE.defaultWeatherKind].wind),
+    fogDensity: t.float32().default(ENGINE.weatherPresets[ENGINE.defaultWeatherKind].fogDensity),
+    rainIntensity: t.float32().default(ENGINE.weatherPresets[ENGINE.defaultWeatherKind].rainIntensity),
+  },
+  'WeatherSchema',
+);
+export type WeatherState = InstanceType<typeof WeatherSchema>;
+
 export const IslandConfigSchema = schema(
   {
     teamCount: t.uint8().default(2),
-    radius: t.float32().default(80),
+    radius: t.float32().default(ENGINE.pass1IslandRadius),
     centerRadius: t.float32().default(16),
     baseRadius: t.float32().default(56),
   },
@@ -99,7 +125,7 @@ export type IslandConfigState = InstanceType<typeof IslandConfigSchema>;
 
 export const IslandState = schema(
   {
-    phase: t.string().default('active'),
+    phase: t.string().default('dock'),
     winnerTeamId: t.string().default(''),
     matchTimeRemaining: t.float32().default(ENGINE.matchDurationSec),
     islandConfig: t.ref(IslandConfigSchema),
@@ -107,6 +133,8 @@ export const IslandState = schema(
     bases: t.map(BaseSchema),
     crates: t.map(CrateSchema),
     traps: t.map(TrapSchema),
+    boats: t.map(BoatSchema),
+    weather: t.ref(WeatherSchema),
   },
   'IslandState',
 );

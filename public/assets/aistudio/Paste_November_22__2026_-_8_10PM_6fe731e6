@@ -1,0 +1,159 @@
+Pass 1B — Fix verification gaps and reskin Battle Island
+You are already inside the existing Gate Haven Google AI Studio Build project (repo ashleycribb/GateHaven) at main 36a3ef8 (refactor: rebrand as Battle Island and add Colyseus). Work in place. Do not create a new app or repo. Do not rename the GitHub repository or the AI Studio project. Do not start from a blank boilerplate. Do not call Gemini for gameplay. Do not add server/aiDirector.ts. Do not add a gathering, chopping, mining, or crafting loop in this pass (that may be Pass 2 — leave room for it; do not add stub resource systems, and do not reuse loadout slots as resource bags).
+
+The live game is already Battle Island: Colyseus 0.18 authoritative room, @colyseus/schema 5.x, Babylon.js third-person client, React HUD only, single-port server on 3000, fail-closed Gemini proxy unused by gameplay, AT-01…AT-20 passing. Keep that architecture. This pass has three parts: (A) fix the gaps in the Pass 1 verification report; (B) a visual-only reskin so the island reads as a moody Valheim-style survival/base-building skirmish with Fortnite-style team fights — not a candy-colored “pre-K playland”; (C) a server-authoritative dock/marina arrival (players gather on the dock, board their team’s boat, sail to their shore), server-owned weather with shore ocean audio, and build-time only use of AI Studio Maps / music / image tools.
+
+Part B is rendering, camera, HUD, and assets only. Do not change movement, combat, loot odds, scoring, bot rules, or other sim numbers except the named engine constants called out in Part A and the dock/boarding/phase/timer rules in Part C. Weather in Part C is visual and audio only — no gameplay effect.
+
+Non-negotiable rules
+Test-first: write AT-21…AT-38 first and run them; they must fail. Then implement one feature per step below. Do not edit AT-01…AT-20 (or their engine/registry constants) to make anything pass. Do not weaken, skip, or tautologize the new tests.
+No stubs, TODOs, silent fallbacks, or invented defaults. Missing or invalid config, assets, or quality settings fail closed (throw / non-zero exit / 4xx), never a quiet substitute (no || 80, no unlit pink box if a glTF is missing, no hidden auto-downgrade).
+Engine code owns every numeric rule and every visual budget. Put new numbers in shared/engine.ts as named fields. No bare 80, 100, or draw-call limits in room/client/system files.
+The Babylon client remains a pure renderer + input device. React HUD must not own game rules or positions.
+Keep AI Studio wiring: port 3000, host 0.0.0.0, .env.example comments, DISABLE_HMR in vite.config.ts and server/dev.ts. Do not “fix” Vite HMR WebSocket errors in this environment (the preview iframe can close the Vite HMR socket; that is expected).
+Production server still must not import vite. Pin Colyseus 0.18.x and @colyseus/schema 5.x. @google/genai stays server-only. Deep-import @babylonjs/core, and you may add @babylonjs/loaders and @babylonjs/materials the same way (no Three.js).
+Display title remains the single exported DISPLAY_NAME (and DISPLAY_DESCRIPTION) in shared/branding.ts. Do not scatter title strings.
+AI Studio Google Maps, music generation, and image generation are build-time tools only. No live Maps tiles, Maps JavaScript API, music generation, or image generation during gameplay or in the production client bundle. @google/genai / POST /api/generate stay unused by the match (Pass 2 may use the proxy later; this pass must not call it from IslandScene, HUD, or the room).
+Part A — Verification fixes
+Fix these concrete gaps. Each gets a new AT.
+
+Build range is authoritative on every path. processPlayerInteract already uses ENGINE.baseBuildRange (server/rooms/IslandRoom.ts around the socket search). handleBuildSocket and the build_socket message handler do not, so sendBuildSocket can upgrade a friendly socket from anywhere. Enforce the same range check inside handleBuildSocket (distance from the acting player to the socket vs ENGINE.baseBuildRange). Out of range is rejected (fail closed, no build, no points, no MatchLog event). In-range legal builds still succeed.
+
+413 before key check. In server/geminiHandler.ts, the 32 KB body cap (ENGINE.maxGeminiBodyBytes) must run before the missing-key / GEMINI_MOCK 503 path. A body over 32 KB returns 413 Request body too large (and nosniff) even when GEMINI_API_KEY is missing and GEMINI_MOCK is not "1". Write the 413 response before destroying the socket. Do not edit AT-04; add AT-22 for this stricter case.
+
+Missing Origin is rejected. Decision for this pass: POST /api/generate with a missing Origin header returns 403 (same as Origin: null and unparsable Origin). Must not throw or drop the socket. Do not edit AT-03; add AT-23.
+
+No more magic 80 / 100. Move them into shared/engine.ts as named constants (e.g. coreUpgradeHpBonus for base.coreHp += 100 in src/systems/BaseSystem.ts; a named Pass 1 island-radius constant that matches shared/defaultIslandConfig.json). applyInput must not default islandRadius = 80. Callers pass the live islandConfig.radius. The client reconciler must not use islandConfig?.radius || 80; missing radius fails closed.
+
+DISPLAY_NAME is the only title source. index.html and metadata.json must get name / <title> / og:title from DISPLAY_NAME and description from DISPLAY_DESCRIPTION. Build-time injection is required and sufficient (Vite plugin or prebuild script that reads shared/branding.ts). After vite build, the emitted files must match those constants. Server log strings in server/index.ts and server/dev.ts must also use DISPLAY_NAME, not a hardcoded "Battle Island".
+
+Frozen install works. Commit a package-lock.json so npm ci works, and/or regenerate bun.lock so bun install --frozen-lockfile works. The published bun.lock still lists @types/three after Three.js was removed — that must go. Remove the unused dotenv dependency if it is still unused. The lockfile(s) you commit must match package.json and must not mention three or @types/three.
+
+Trim the synced schema to what clients need — then lock it. Keep only fields the HUD or renderer must show. This is the allowlist (do not add more; do not remove a field the client already uses):
+
+Room: phase, winnerTeamId, matchTimeRemaining, islandConfig, players, bases, crates, traps, boats, weather
+phase values (exact): dock | boarding | sailing | landing | match | ended
+islandConfig: teamCount, radius, centerRadius, baseRadius
+Player: id, teamId, isBot, x, y, z, rotY, hp, maxHp, shieldHp, alive, activeWeaponIndex, weaponSlots, skillSlots, trapSlots, landed, boatId (boatId empty when not on a boat)
+Owned item: itemId, level, modifiers
+Base: teamId, x, z, tier, coreHp, points, sockets
+Socket: id, type, tier, occupied, x, z
+Crate: id, x, z, tier, opened
+Trap: id, ownerId, teamId, itemId, x, z, triggered
+Boat: id, teamId, x, y, z, rotY
+Weather: kind (clear | overcast | rain | storm), wind, fogDensity, rainIntensity (all required; numeric fields stay inside named ENGINE min/max)
+Still never sync matchLog, registries, odds tables, or AI directors. Do not edit AT-08; AT-27 asserts this exact allowlist.
+
+Part B — Visual pass (Valheim / Fortnite, not pre-K)
+Art direction. Genre: Valheim-style survival and base-building plus Fortnite-style team skirmish on one radial island (think also Minecraft, Roblox, Rust, Fortnite — but the current primitive pastel scene is wrong). Stylized low-poly but moody. Muted natural palette: pine, stone, wet sand, weathered wood, overcast sky. No candy primaries as fill colors (no toy pink/cyan/yellow unlit blobs). Team colors appear only as accents on banners, trim, and a small HUD pip — not as the terrain or unit body.
+
+Lighting and atmosphere (Babylon). Directional sun + hemispheric fill; cascaded shadows; exponential fog whose density follows the server weather state (Part C); HDRI/skybox environment. PBR materials (PBRMaterial / metallic-roughness) or a restrained toon/PBR hybrid — not unlit StandardMaterial primaries. Animated shoreline water (WaterMaterial or equivalent vertex-animated water with named engine wave/color constants).
+
+Terrain. Textured heightmap ground that respects IslandConfig (radius, centerRadius, baseRadius) so gameplay positions stay valid. Shoreline slope into the water. The heightmap is a checked-in original file (see Part C: Maps may be a build-time visual reference only — do not bake Google tiles or Maps elevation into the repo). Vendor Poly Haven terrain textures (below) for forest floor, shore sand, and rock.
+
+Scatter. Pines, rocks, and grass via thin instances and LOD (distances in ENGINE). Do not place a unique mesh per prop.
+
+Bases. Wooden and stone socket pieces that change with tier (wood from the pirate/survival kits, stone from the castle kit, PBR-recolored to the muted palette). Team-colored banners/trim only.
+
+Characters and camera. Rigged third-person character from the verified CC0 character pack, with idle, run, jump, and attack clips from the verified animation library. Over-the-shoulder camera (named offset/height in ENGINE) on the local predicted pose, with camera collision (pull in when a tree or wall is behind the shoulder). Hit/damage VFX and particles are renderer-only, driven by existing state / MatchLog events — no new sim rules.
+
+HUD reskin. Dark translucent panels; compact Fortnite-style bottom-center hotbar (weapon / skill / trap slots); minimal top scoreboard (team points + match timer); compact toasts. No bubbly typography (denylist at least Comic Sans MS, Comic Neue, Fredoka, Baloo, Bubblegum Sans). A carved serif for the title (current Cinzel is acceptable) plus a compact sans for HUD chrome is fine. Keep using DISPLAY_NAME.
+
+Performance. Target 60 fps. Named quality presets in ENGINE (at least low | medium | high) with explicit draw-call and triangle budgets, cascade counts, instance densities, and particle caps. Default is a named preset. Changing quality is an explicit setting (engine constant and/or a visible HUD/settings control). No silent hardware auto-downgrade and no hidden adaptive scaler. Invalid or missing quality fails closed.
+
+Assets and provenance. Vendor files into the repo (e.g. public/assets/ or src/assets/island/). Do not fetch third-party CDNs at runtime — a missing local file fails closed. Write an asset manifest (e.g. shared/assetManifest.json) where every file has: id, local path, and what it is used for, plus provenance. CC0 pack files also have source URL (pack or asset page), license CC0-1.0, and author/pack name. AI Studio–generated music, ambience, textures, or icons (Part C) have source exactly AI Studio generated, a non-empty prompt, and an ISO date (no fake CC0 pack URL). Only the CC0 packs below, which were HTTP-checked for this prompt (pages 200, license text CC0), plus optional AI Studio generated files recorded that way. Do not use Poly Pizza in this pass (no verifiable license URL). Do not use Quaternius packs that declare only the newer QAL and not CC0. If a pack page splits a “free portion” vs extras, vendor only CC0 files and record the pack page.
+
+Verified packs / assets (use these):
+
+Quaternius Ultimate Nature Pack — https://quaternius.com/packs/ultimatenature.html — CC0 (page links https://creativecommons.org/publicdomain/zero/1.0/) — 150 textured low-poly trees, rocks, grass, forest props. Primary vegetation; this is the mid-ground look.
+Quaternius Universal Base Characters — https://quaternius.com/packs/universalbasecharacters.html — CC0 — glTF, humanoid rig, compatible with the animation library.
+Quaternius Universal Animation Library — https://quaternius.com/packs/universalanimationlibrary.html — CC0 — locomotion and combat clips; vendor at least idle, run/jog, jump, and attack.
+Kenney Castle Kit — https://kenney.nl/assets/castle-kit — “License Creative Commons CC0” — 75 models: stone walls, towers, flags for higher-tier sockets.
+Kenney Pirate Kit — https://kenney.nl/assets/pirate-kit — CC0 — 70 models, including wooden fortress walls for lower-tier / island structures. Required for Part C: use this pack’s dock/marina and boat/ship pieces for the shared marina and per-team boats (not a primitive box dock).
+Kenney Survival Kit — https://kenney.nl/assets/survival-kit — CC0 — 80 survival/nature models; optional camp/base props only.
+Poly Haven (all site assets CC0 — https://polyhaven.com/license). Vendor 1k or 2k, not 16k:
+HDRI sky (default mood): Misty Pines — https://polyhaven.com/a/misty_pines — 1k file verified: https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/misty_pines_1k.hdr
+Optional brighter coastal sky: Dalkey View — https://polyhaven.com/a/dalkey_view — 1k file verified: https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/dalkey_view_1k.hdr
+Terrain: Forest Ground 04 https://polyhaven.com/a/forest_ground_04 ; Coast Sand 04 https://polyhaven.com/a/coast_sand_04 ; Rocky Trail https://polyhaven.com/a/rocky_trail ; Wooden Rough Planks https://polyhaven.com/a/wooden_rough_planks (wood sockets)
+Do not use Kenney Platformer Kit, Mini Characters, or Animated Characters Retro as hero art — they read as toy/pre-K. Kenney Nature Kit (https://kenney.nl/assets/nature-kit, CC0, 330 untextured miniature props) is optional distant filler only if uniformly scaled and recolored; do not use it as mid-ground trees next to Quaternius nature.
+
+Part C — Dock / marina boats, weather / ocean audio, build-time AI Studio tools
+1. Dock / marina arrival (server-authoritative)
+The pre-match space is a dock/marina, not a void or an instant spawn on the island. Players gather on the dock, board their team’s boat, then sail to their side of the island. Build the marina and boats from Kenney Pirate Kit dock/boat pieces (see Part B).
+
+Room phase is server-authoritative and advances only: dock → boarding → sailing → landing → match → (existing) ended. Durations, dock bounds, slip poses, boat speed, and landingRadius are named ENGINE constants. Invalid phase values fail closed. The server must not skip a phase (no jump from dock to sailing).
+A shared marina (static, from checked-in config / named ENGINE marina pose — not a team base) has one slip and one boat per team. Use Pirate Kit docks and boats, muted PBR, team color only on trim/banners.
+dock: the room starts here. Players spawn and may move only on the dock (server clamps to named dock bounds). They are not on the island and not on a boat yet (landed === false, boatId empty).
+boarding: players board their team’s boat at that team’s slip (interact and/or auto-board at the end of ENGINE.boardingDurationSec). boatId is set; landed stays false. The server does not advance to sailing until every non-helper player who is in the room is on their own team’s boat.
+sailing: boats leave the marina along a deterministic path that ends at that team’s base shore (the shoreline in front of that team’s radial base — 2π * i / teamCount — not the shared marina and not an enemy beach).
+landing: the boat is at the end of the path and players disembark onto land on their own side (landed === true, boatId cleared).
+Base-helper NPCs may already be at their base and do not block “all have landed.” Roaming bots board and sail with their team if they arrive by boat.
+The match clock (matchTimeRemaining) starts decrementing only when all have landed (every non-helper player who was present at the start of sailing has landed === true) and phase is match. Until then it stays at ENGINE.matchDurationSec. Combat, crate opens, and building are rejected until match (fail closed). Do not break AT-17’s evaluateMatchEnd unit tests; just don’t tick the timer or open the match early.
+The client only renders the marina, boats, and seats; it does not author phase, boat pose, boarding, or landing.
+2. Weather and ocean audio (visual / audio only)
+The server owns weather on the room state: kind is only clear | overcast | rain | storm. wind, fogDensity, and rainIntensity are required numbers inside named ENGINE min/max. A default starting kind is a named ENGINE constant (e.g. defaultWeatherKind), not an invented ad-hoc value. The server may change weather within those bounds (named hold/transition times if you add a cycle).
+The client presents weather only: rain particles, wind on foliage/camera, fog density, and optional sky exposure. No gameplay effect this pass — no movement slow, no damage, no accuracy or visibility rule changes.
+Positional ocean / wave ambience via the Web Audio API, gain (and optional low-pass) scaled by distance from the listener (local predicted pose) to the shoreline, using named ENGINE constants. Louder at the beach, quieter inland. Buffers come from the manifest (CC0 and/or AI Studio generated at build time). Missing buffers fail closed unless audio is explicitly off.
+3. AI Studio Maps, music, and image tools — build-time only
+Ashley may enable Google Maps, music generation, and image generation in AI Studio. Treat them as authoring tools, not runtime features.
+
+Google Maps: optional visual reference while designing the island silhouette. Google Maps terms restrict deriving and storing Maps content (including tiles and elevation). Do not download, cache, or check in Maps tiles, Street View, or Maps elevation/terrain data. Do not load the Maps JavaScript API or tile endpoints in the game. If Maps is used at all, look at it, then author our own checked-in heightmap and IslandConfig by hand (or with a local bake that does not contain Google data). The runtime heightmap is that original checked-in file.
+Music and image generation: optional at build time for ambience beds, stingers, textures, or HUD icons. Vendor the files. Record each in the asset manifest with source exactly AI Studio generated, the prompt, and the date. No live generation during gameplay, dock, boarding, or sailing — no calls to POST /api/generate, @google/genai, or other generative endpoints from the room or client.
+AT-28/AT-38 cover provenance. AT-37 covers the no-live-Maps / no-live-generation bundle check.
+Acceptance tests — write these first (must fail)
+Use Vitest. Use @colyseus/testing for room tests. Use Babylon NullEngine for scene-graph tests (headless; no GPU required). Number them exactly. Do not edit them after this step. Do not edit AT-01…AT-20.
+
+AT-21 handleBuildSocket (and therefore build_socket) rejects a legal socket when the acting player is farther than ENGINE.baseBuildRange from that socket (no occupancy change, no points, no base_upgraded log). The same call succeeds when the player is in range.
+
+AT-22 POST /api/generate with a body over ENGINE.maxGeminiBodyBytes returns 413 and the body contains Request body too large when GEMINI_API_KEY is missing and GEMINI_MOCK is not "1" (413 happens first, not 503).
+
+AT-23 POST /api/generate with no Origin header returns 403 and does not throw or drop the socket.
+
+AT-24 shared/applyInput.ts has no default parameter value 80 for island radius; src/net/client.ts has no || 80 (or equivalent) on radius; src/systems/BaseSystem.ts has no literal 100 HP bump — it uses ENGINE.coreUpgradeHpBonus (or the name you put in shared/engine.ts). A legal core upgrade changes coreHp by exactly that engine constant.
+
+AT-25 DISPLAY_NAME / DISPLAY_DESCRIPTION from shared/branding.ts equal the <title>, og:title, name, and description values in index.html and metadata.json (after the injector has run / after vite build). Those files do not contain a conflicting hardcoded title or a description that differs from DISPLAY_DESCRIPTION. Server entry sources reference DISPLAY_NAME rather than a raw "Battle Island" log string.
+
+AT-26 A package-lock.json exists at the repo root (and/or bun.lock is consistent). The committed lockfile(s) do not mention three or @types/three. package.json does not depend on unused dotenv if you removed it. (If you commit package-lock.json, npm ci must be the documented install path and must work.)
+
+AT-27 room.state.toJSON() (room, islandConfig, one player, one owned item, one base, one socket, one crate, one trap, one boat, weather) exposes exactly the allowlist in Part A — no missing keys, no extra keys (matchLog, itemRegistry, quests, etc. still forbidden).
+
+AT-28 The asset manifest lists every vendored island/character/sky/terrain/audio/UI file with id, local path, and provenance. CC0 entries have source URL, CC0-1.0 license, and author/pack; those source URLs are one of the Part B pack/asset pages (or a file URL under those verified hosts). AI Studio generated entries follow Part C (source is AI Studio generated, plus prompt and date). Every local path exists. No Poly Pizza entries.
+
+AT-29 A headless NullEngine test constructs the island scene (or its documented test harness) and asserts: exponential fog is enabled, a cascaded shadow generator exists, and at least one mesh was imported via SceneLoader from a manifest glTF whose file exists.
+
+AT-30 The loaded character has animation groups (or a documented clip map) covering idle, run, jump, and attack. Camera follow uses the named over-the-shoulder offset from ENGINE and has collision enabled.
+
+AT-31 ENGINE defines low | medium | high quality profiles with numeric draw-call and triangle budgets (and cascade / instance caps). Quality is read from an explicit setting. An invalid or missing quality value fails closed. Source must not implement a silent hardware auto-downgrade path (no “if fps < 50, secretly drop to low”).
+
+AT-32 HUD markup/CSS uses dark translucent panel tokens, a bottom-center hotbar, and a top scoreboard; computed/font-family CSS does not include the bubbly denylist; visible HUD title text still comes from DISPLAY_NAME.
+
+AT-33 A new room starts in phase === "dock" with non-helper players on the marina dock (landed === false, boatId empty). The server advances only in order dock → boarding → sailing → landing → match (then the existing ended when the match is over). It does not skip a phase or jump backward (including no dock → sailing). It does not enter sailing while any of those players still has an empty boatId. matchTimeRemaining stays at ENGINE.matchDurationSec and does not decrement during dock, boarding, sailing, or landing. It starts decrementing only after all non-helper players who were in the room at the start of sailing have landed === true and phase is match. Do not edit AT-17; evaluateMatchEnd may still be called in tests, but the room must not apply the timer during pre-match phases.
+
+AT-34 Each team has a server-authoritative boat that starts at that team’s marina slip. The boat path departs the shared dock and ends at that team’s shore landing point (derived from IslandConfig / named ENGINE shore constants — the point on the shoreline in front of that team’s base, not the marina and not the opponent’s shore). When that boat finishes landing, every player who was assigned to it is on land on their own side (within ENGINE.landingRadius of their team’s landing point, closer to their own base than to any enemy base, and inside the island radius). A player must not land on an enemy shore.
+
+AT-35 Synced weather.kind is only clear | overcast | rain | storm. wind, fogDensity, and rainIntensity are required and clamped to named ENGINE min/max (setting a value outside that range is rejected, fail closed, no silent clamp in the setter used by tests). Changing weather does not change ENGINE.moveSpeed, damage, or other sim combat/movement stats (assert before/after). The client may drive rain particles, wind presentation, and fog density from this state.
+
+AT-36 Ocean/wave ambience uses the Web Audio API. A documented pure function (in shared/ or an audio module) maps distance-to-shoreline to gain using named ENGINE constants (louder nearer the shore; at or beyond ENGINE.oceanAudioMaxDistance gain is the named minimum, including zero if that is the constant). The test asserts that function and that the runtime audio graph is created from manifest-listed buffers — missing buffers fail closed (or only if an explicit “audio off” setting is set; no quiet success when a file is absent). No real speakers required.
+
+AT-37 The production client bundle and game runtime (IslandScene, HUD, net client, room) do not import the Google Maps JavaScript API, do not load maps.googleapis.com (or other Maps tile/elevation endpoints), and do not call POST /api/generate or @google/genai. The heightmap used at runtime is a checked-in file referenced by config/manifest, not fetched from Maps.
+
+AT-38 Every manifest entry with source === AI Studio generated has a non-empty prompt and an ISO calendar date. Runtime code does not invoke AI Studio music, image, or Maps generation. CC0 pack entries remain CC0 with their pack URLs as in AT-28.
+
+Implement in this order (one feature per step; do not edit ATs)
+Write AT-21…AT-38 (and any new constants-only ENGINE fields the tests import). Run tests; confirm the new ATs fail; confirm AT-01…AT-20 still pass.
+Enforce ENGINE.baseBuildRange inside handleBuildSocket. (AT-21)
+Reorder the Gemini proxy so the 32 KB cap returns 413 before the key/mock 503. (AT-22)
+Reject a missing Origin on /api/generate with 403. (AT-23)
+Replace magic 80 / 100 with named ENGINE constants; fail closed if the live island radius is missing. (AT-24)
+Add build-time DISPLAY_NAME / DISPLAY_DESCRIPTION injection; fix server logs. (AT-25)
+Commit a consistent lockfile (package-lock.json and/or a repaired bun.lock); drop leftover Three.js lock entries and unused dotenv. (AT-26)
+Lock the synced schema to the Part A allowlist (including boats, weather, landed, boatId, and the Part C phase values). (AT-27)
+Vendor the verified CC0 assets and write the provenance manifest (leave hooks for optional AI Studio generated entries). (AT-28)
+Named quality presets in ENGINE + explicit setting (fail closed). (AT-31)
+Rebuild IslandScene: PBR, sun + hemi, cascaded shadows, exponential fog, skybox/HDRI, checked-in heightmap terrain + shoreline, animated water, instanced/LOD scatter, tiered base pieces. (AT-29)
+Rigged character clips + over-the-shoulder camera with collision; hit/damage VFX. (AT-30)
+Reskin the React HUD. (AT-32)
+Dock/marina + boats from the Kenney Pirate Kit: phases dock → boarding → sailing → landing → match, no skipping, players gather on the dock and board their team boat, paths end at own shore, timer starts only after all have landed. (AT-33, AT-34)
+Server weather state + rain/wind/fog presentation; Web Audio ocean/wave gain by distance to shore. (AT-35, AT-36)
+Build-time-only Maps / music / image workflow: original checked-in heightmap (Maps as visual reference only, no stored Google tiles); manifest provenance for any AI Studio generated audio/images; confirm the client does not load Maps or call generation at runtime. (AT-37, AT-38)
+vitest / npm test, tsc --noEmit, and vite build must pass. Confirm the preview still serves and the Colyseus WebSocket still attaches on port 3000.

@@ -51,7 +51,7 @@ export function buildOnSocket(
   let upgradedCore = false;
   if (socket.type === 'core_upgrade') {
     base.tier = Math.min(ENGINE.maxBaseTier, Math.max(base.tier + 1, targetTier + 1));
-    base.coreHp += 100;
+    base.coreHp += ENGINE.coreUpgradeHpBonus;
     upgradedCore = true;
   }
 

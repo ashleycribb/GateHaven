@@ -24,14 +24,18 @@ function clamp(v: number, min: number, max: number): number {
 /**
  * Deterministic shared movement integration run identically on the server room
  * and the client predict.reconciler.
+ * Fails closed when islandRadius is missing or invalid (no invented default radius).
  */
 export function applyInput(
   state: MovablePose,
   cmd: MoveCommand | null | undefined,
   dt: number,
-  islandRadius = 80,
+  islandRadius: number,
   speedMultiplier = 1,
 ): void {
+  if (typeof islandRadius !== 'number' || !Number.isFinite(islandRadius) || islandRadius <= 0) {
+    throw new Error(`applyInput requires a finite positive islandRadius (got ${String(islandRadius)})`);
+  }
   if (!cmd || !Number.isFinite(dt) || dt <= 0) return;
 
   let mx = clamp(finiteOrZero(cmd.moveX), -1, 1);
@@ -47,7 +51,7 @@ export function applyInput(
   const nextX = (Number.isFinite(state.x) ? state.x : 0) + mx * speed * dt;
   const nextZ = (Number.isFinite(state.z) ? state.z : 0) + mz * speed * dt;
 
-  // Clamp inside radial island shoreline
+  // Clamp inside radial island shoreline when on the island
   const maxR = Math.max(5, islandRadius - ENGINE.islandEdgeMargin);
   const r = Math.hypot(nextX, nextZ);
   if (r > maxR) {

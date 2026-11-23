@@ -1,6 +1,6 @@
 {
   "name": "Battle Island",
-  "description": "Battle Island is a family-friendly third-person island skirmish game. Loot crates, fortify your team base, lay traps, and outscore rival squads.",
+  "description": "Battle Island is a family-friendly, server-authoritative third-person radial island skirmish game built with Babylon.js and Colyseus.",
   "requestFramePermissions": [],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

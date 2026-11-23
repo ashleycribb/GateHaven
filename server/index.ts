@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { ENGINE } from '../shared/engine';
+import { DISPLAY_NAME, ENGINE } from '../shared/engine';
 import { createGeminiHandler } from './geminiHandler';
 import { IslandRoom } from './rooms/IslandRoom';
 
@@ -117,10 +117,10 @@ const isMainModule =
 if (isMainModule) {
   createBattleIslandServer()
     .then((handle) => {
-      console.log(`Battle Island server listening on http://${handle.host}:${handle.port}`);
+      console.log(`${DISPLAY_NAME} server listening on http://${handle.host}:${handle.port}`);
     })
     .catch((err) => {
-      console.error('Failed to start Battle Island server:', err);
+      console.error(`Failed to start ${DISPLAY_NAME} server:`, err);
       process.exit(1);
     });
 }

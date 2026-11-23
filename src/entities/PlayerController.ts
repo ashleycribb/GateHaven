@@ -197,6 +197,13 @@ export class PlayerController {
       data.interact = interact;
       this.connection.input.send();
 
+      if (interact && this.connection.room.state.phase === 'boarding') {
+        const self = this.connection.room.state.players?.get(this.connection.room.sessionId);
+        if (self && !self.boatId) {
+          this.connection.sendBoardBoat();
+        }
+      }
+
       // Clear one-shot touch pulses after transmitting
       this.touchAttack = false;
       this.touchSkill = false;

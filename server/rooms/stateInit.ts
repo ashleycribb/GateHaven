@@ -1,7 +1,9 @@
 import { ENGINE } from '../../shared/engine';
 import type { IslandConfig, RadialIslandLayout } from '../../shared/islandConfig';
+import { getMarinaSlipPose } from '../../shared/marina';
 import {
   BaseSchema,
+  BoatSchema,
   CrateSchema,
   SocketSchema,
   type IslandRoomState,
@@ -12,7 +14,7 @@ export function initializeIslandState(
   config: IslandConfig,
   layout: RadialIslandLayout,
 ): void {
-  state.phase = 'active';
+  state.phase = 'dock';
   state.winnerTeamId = '';
   state.matchTimeRemaining = ENGINE.matchDurationSec;
 
@@ -22,6 +24,7 @@ export function initializeIslandState(
   state.islandConfig.baseRadius = config.baseRadius;
 
   state.bases.clear();
+  state.boats.clear();
   for (const basePlacement of layout.bases) {
     const base = new BaseSchema();
     base.teamId = basePlacement.teamId;
@@ -43,6 +46,16 @@ export function initializeIslandState(
     }
 
     state.bases.set(base.teamId, base);
+
+    const slip = getMarinaSlipPose(basePlacement.teamIndex, config.teamCount);
+    const boat = new BoatSchema();
+    boat.id = `boat_${basePlacement.teamId}`;
+    boat.teamId = basePlacement.teamId;
+    boat.x = slip.x;
+    boat.y = slip.y;
+    boat.z = slip.z;
+    boat.rotY = slip.rotY;
+    state.boats.set(boat.id, boat);
   }
 
   state.crates.clear();
@@ -57,4 +70,10 @@ export function initializeIslandState(
   }
 
   state.traps.clear();
+
+  const defaultWeather = ENGINE.weatherPresets[ENGINE.defaultWeatherKind];
+  state.weather.kind = ENGINE.defaultWeatherKind;
+  state.weather.wind = defaultWeather.wind;
+  state.weather.fogDensity = defaultWeather.fogDensity;
+  state.weather.rainIntensity = defaultWeather.rainIntensity;
 }

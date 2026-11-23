@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createServer as createViteServer } from 'vite';
 import { Server } from '@colyseus/core';
 import { WebSocketTransport } from '@colyseus/ws-transport';
-import { ENGINE } from '../shared/engine';
+import { DISPLAY_NAME, ENGINE } from '../shared/engine';
 import { createGeminiHandler } from './geminiHandler';
 import { IslandRoom } from './rooms/IslandRoom';
 
@@ -73,10 +73,10 @@ async function startDevServer(): Promise<void> {
 
   gameServer.define('island', IslandRoom);
   await gameServer.listen(port, host);
-  console.log(`Battle Island dev server listening on http://${host}:${port}`);
+  console.log(`${DISPLAY_NAME} dev server listening on http://${host}:${port}`);
 }
 
 startDevServer().catch((err) => {
-  console.error('Failed to start Battle Island dev server:', err);
+  console.error(`Failed to start ${DISPLAY_NAME} dev server:`, err);
   process.exit(1);
 });

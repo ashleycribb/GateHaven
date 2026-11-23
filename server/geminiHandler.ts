@@ -35,7 +35,11 @@ function isUsableApiKey(raw: string | undefined): raw is string {
   return true;
 }
 
-function isOriginAllowed(originHeader: string, allowedOrigin: string | null, hostHeader?: string): boolean {
+function isOriginAllowed(
+  originHeader: string | undefined,
+  allowedOrigin: string | null,
+  hostHeader?: string,
+): boolean {
   if (!originHeader || originHeader === 'null') {
     return false;
   }
@@ -115,10 +119,10 @@ export function createGeminiHandler(
   }
 
   return (req: IncomingMessage, res: ServerResponse): void => {
-    // 1. Validate Origin header strictly before anything else
     const rawOrigin = req.headers.origin;
-    if (rawOrigin !== undefined) {
-      const originValue = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
+    const originValue = Array.isArray(rawOrigin) ? rawOrigin[0] : rawOrigin;
+
+    if (req.method === 'OPTIONS') {
       if (!isOriginAllowed(originValue, allowedOrigin, req.headers.host)) {
         res.removeHeader('Access-Control-Allow-Origin');
         res.removeHeader('Access-Control-Allow-Credentials');
@@ -126,11 +130,8 @@ export function createGeminiHandler(
         req.resume();
         return;
       }
-      res.setHeader('Access-Control-Allow-Origin', originValue);
+      res.setHeader('Access-Control-Allow-Origin', originValue!);
       res.setHeader('Vary', 'Origin');
-    }
-
-    if (req.method === 'OPTIONS') {
       res.statusCode = 204;
       res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -144,22 +145,7 @@ export function createGeminiHandler(
       return;
     }
 
-    // 2. Per-IP rate limit
-    const clientIp = req.socket?.remoteAddress || 'unknown';
-    if (!checkRateLimit(clientIp)) {
-      sendJson(res, 429, { error: 'Rate limit exceeded' });
-      req.resume();
-      return;
-    }
-
-    // 3. Fail closed when Gemini is unavailable and mock is not strictly "1"
-    if (!isMock && !aiClient) {
-      sendJson(res, 503, { error: 'Gemini proxy unavailable: GEMINI_API_KEY is not configured' });
-      req.resume();
-      return;
-    }
-
-    // 4. Incremental byte cap (32 KB) — send 413 cleanly before draining/closing
+    // 1. Body size check (32 KB) runs BEFORE key/mock 503 and BEFORE Origin rejection
     const declaredLength = Number(req.headers['content-length']);
     if (Number.isFinite(declaredLength) && declaredLength > ENGINE.maxGeminiBodyBytes) {
       sendJson(res, 413, { error: 'Request body too large' });
@@ -179,6 +165,7 @@ export function createGeminiHandler(
         rejected = true;
         chunks.length = 0;
         sendJson(res, 413, { error: 'Request body too large' });
+        req.resume();
         return;
       }
       chunks.push(buf);
@@ -193,6 +180,30 @@ export function createGeminiHandler(
     req.on('end', () => {
       if (rejected || res.writableEnded) return;
 
+      // 2. Strict Origin validation (missing, null, or unparsable Origin -> 403)
+      if (!isOriginAllowed(originValue, allowedOrigin, req.headers.host)) {
+        res.removeHeader('Access-Control-Allow-Origin');
+        res.removeHeader('Access-Control-Allow-Credentials');
+        sendJson(res, 403, { error: 'Forbidden origin' });
+        return;
+      }
+      res.setHeader('Access-Control-Allow-Origin', originValue!);
+      res.setHeader('Vary', 'Origin');
+
+      // 3. Per-IP rate limit
+      const clientIp = req.socket?.remoteAddress || 'unknown';
+      if (!checkRateLimit(clientIp)) {
+        sendJson(res, 429, { error: 'Rate limit exceeded' });
+        return;
+      }
+
+      // 4. Fail closed when Gemini is unavailable and mock is not strictly "1"
+      if (!isMock && !aiClient) {
+        sendJson(res, 503, { error: 'Gemini proxy unavailable: GEMINI_API_KEY is not configured' });
+        return;
+      }
+
+      // 5. Parse JSON body
       let parsedBody: unknown;
       try {
         const raw = Buffer.concat(chunks).toString('utf8');

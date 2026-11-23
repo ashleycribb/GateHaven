@@ -14,7 +14,16 @@ export interface BattleIslandConnection {
   readonly sendBuildSocket: (socketId: string, type: SocketType, targetTier: number) => void;
   readonly sendOpenCrate: (crateId: string) => void;
   readonly sendSwitchWeapon: (slotIndex: number) => void;
+  readonly sendBoardBoat: () => void;
   readonly dispose: () => Promise<void>;
+}
+
+function requireLiveIslandRadius(room: Room<IslandRoomState>): number {
+  const radius = room.state.islandConfig?.radius;
+  if (typeof radius !== 'number' || !Number.isFinite(radius) || radius <= 0) {
+    throw new Error('Missing authoritative islandConfig.radius from server state');
+  }
+  return radius;
 }
 
 export async function connectBattleIsland(origin?: string): Promise<BattleIslandConnection> {
@@ -33,6 +42,8 @@ export async function connectBattleIsland(origin?: string): Promise<BattleIsland
     if (reconciler) return reconciler;
     const self = room.state.players?.get(room.sessionId);
     if (!self) return null;
+    if (!room.state.islandConfig || room.state.islandConfig.radius <= 0) return null;
+
     reconciler = predict.reconciler(self, {
       input,
       fields: ['x', 'y', 'z', 'rotY'],
@@ -41,13 +52,12 @@ export async function connectBattleIsland(origin?: string): Promise<BattleIsland
           s as { x: number; y: number; z: number; rotY: number },
           cmd as MoveInputState,
           ctx.dt,
-          room.state.islandConfig?.radius || 80,
+          requireLiveIslandRadius(room),
         ),
     });
     return reconciler;
   };
 
-  // Attach immediately if state is already hydrated, or on first state patch
   ensureReconciler();
   room.onStateChange(() => {
     ensureReconciler();
@@ -88,6 +98,9 @@ export async function connectBattleIsland(origin?: string): Promise<BattleIsland
     },
     sendSwitchWeapon: (slotIndex: number) => {
       room.send('switch_weapon', { slotIndex });
+    },
+    sendBoardBoat: () => {
+      room.send('board_boat');
     },
     dispose: async () => {
       predict.dispose();

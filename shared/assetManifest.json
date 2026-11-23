@@ -1,0 +1,181 @@
+{
+  "version": "1.0.0",
+  "assets": [
+    {
+      "id": "sky_misty_pines",
+      "path": "/assets/sky/misty_pines_1k.hdr",
+      "sourceUrl": "https://polyhaven.com/a/misty_pines",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "usedFor": "Overcast coastal pine island IBL environment and sky lighting"
+    },
+    {
+      "id": "sky_dalkey_view",
+      "path": "/assets/sky/dalkey_view_1k.hdr",
+      "sourceUrl": "https://polyhaven.com/a/dalkey_view",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "usedFor": "Clear coastal horizon IBL environment for clear weather"
+    },
+    {
+      "id": "tex_forest_ground",
+      "path": "/assets/textures/forest_ground_04_diff_1k.jpg",
+      "sourceUrl": "https://polyhaven.com/a/forest_ground_04",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "usedFor": "Inland mossy pine forest terrain PBR albedo texture"
+    },
+    {
+      "id": "tex_coast_sand",
+      "path": "/assets/textures/coast_sand_04_diff_1k.jpg",
+      "sourceUrl": "https://polyhaven.com/a/coast_sand_04",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "usedFor": "Wet coastal beach shoreline PBR albedo texture"
+    },
+    {
+      "id": "tex_rocky_trail",
+      "path": "/assets/textures/rocky_trail_diff_1k.jpg",
+      "sourceUrl": "https://polyhaven.com/a/rocky_trail",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "usedFor": "Stronghold rock and cliff terrain PBR albedo texture"
+    },
+    {
+      "id": "tex_wooden_planks",
+      "path": "/assets/textures/wooden_rough_planks_diff_1k.jpg",
+      "sourceUrl": "https://polyhaven.com/a/wooden_rough_planks",
+      "license": "CC0-1.0",
+      "author": "Poly Haven",
+      "usedFor": "Weathered timber planks for docks, hulls, and Tier 1 bases"
+    },
+    {
+      "id": "character_rigged",
+      "path": "/assets/models/character_rigged.glb",
+      "sourceUrl": "https://quaternius.com/packs/universalanimationlibrary.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Rigged humanoid player/bot character with idle, run, jump, attack, and sitting animations"
+    },
+    {
+      "id": "pine_tree_1",
+      "path": "/assets/models/pine_tree_1.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatenature.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Thin-instanced coastal pine tree variant A with LOD"
+    },
+    {
+      "id": "pine_tree_2",
+      "path": "/assets/models/pine_tree_2.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatenature.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Thin-instanced coastal pine tree variant B with LOD"
+    },
+    {
+      "id": "rock_moss_1",
+      "path": "/assets/models/rock_moss_1.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatenature.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Thin-instanced mossy coastal boulders with LOD"
+    },
+    {
+      "id": "grass_tuft",
+      "path": "/assets/models/grass_tuft.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatenature.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Thin-instanced meadow grass tufts with distance cull"
+    },
+    {
+      "id": "team_boat",
+      "path": "/assets/models/team_boat.glb",
+      "sourceUrl": "https://quaternius.com/packs/lowpolyships.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Per-team Nordic longboat docked at marina and sailing to team shore"
+    },
+    {
+      "id": "marina_dock",
+      "path": "/assets/models/marina_dock.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatemedievalrts.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Shared coastal marina dock and boarding pier"
+    },
+    {
+      "id": "base_wall_wood",
+      "path": "/assets/models/base_wall_wood.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatemedievalrts.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Tier 1 wooden palisade wall for team base sockets"
+    },
+    {
+      "id": "base_tower_wood",
+      "path": "/assets/models/base_tower_wood.glb",
+      "sourceUrl": "https://quaternius.com/packs/ultimatemedievalrts.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Tier 1 wooden watchtower for team base sockets"
+    },
+    {
+      "id": "supply_crate",
+      "path": "/assets/models/supply_crate.glb",
+      "sourceUrl": "https://quaternius.com/packs/medievalvillagepack.html",
+      "license": "CC0-1.0",
+      "author": "Quaternius",
+      "usedFor": "Tiered island supply crate prop"
+    },
+    {
+      "id": "base_tower_stone",
+      "path": "/assets/models/base_tower_stone.glb",
+      "sourceUrl": "https://kenney.nl/assets/castle-kit",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "usedFor": "Tier 2-3 reinforced stone watchtower and stronghold core"
+    },
+    {
+      "id": "stone_wall",
+      "path": "/assets/models/stone_wall.glb",
+      "sourceUrl": "https://kenney.nl/assets/castle-kit",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "usedFor": "Tier 2-3 reinforced stone rampart wall"
+    },
+    {
+      "id": "team_banner",
+      "path": "/assets/models/team_banner.glb",
+      "sourceUrl": "https://kenney.nl/assets/castle-kit",
+      "license": "CC0-1.0",
+      "author": "Kenney",
+      "usedFor": "Team-colored heraldic banners on bases and boats"
+    },
+    {
+      "id": "battle_island_crest",
+      "path": "/assets/ui/battle_island_crest.jpg",
+      "source": "AI Studio generated",
+      "prompt": "Minimalist Nordic weathered iron and carved oak island shield crest icon, pine tree silhouette above stylized ocean waves, muted Valheim palette of weathered slate grey, moss pine green, and aged bronze, dark charcoal background, crisp game UI emblem, no text, no letters, clean vector-like heraldic styling",
+      "date": "2026-11-22",
+      "usedFor": "Title screen and scoreboard weathered iron-and-oak island emblem"
+    },
+    {
+      "id": "island_heightmap",
+      "path": "/assets/terrain/island_heightmap.png",
+      "source": "AI Studio generated",
+      "prompt": "Original procedural 256x256 radial island heightmap PNG built at compile time from IslandConfig geometry (80m radius, sloped sandy shoreline, rolling Valheim coastal hills, flat radial team base clearings, central stronghold plateau; zero external map tiles)",
+      "date": "2026-11-22",
+      "usedFor": "Checked-in original heightmap for Babylon CreateGroundFromHeightMap terrain"
+    },
+    {
+      "id": "ocean_waves_audio",
+      "path": "/assets/audio/ocean_waves.wav",
+      "source": "AI Studio generated",
+      "prompt": "Seamlessly looping 6-second coastal ocean surf and gentle shoreline wash PCM WAV buffer synthesized at build time for positional Web Audio ocean ambience",
+      "date": "2026-11-22",
+      "usedFor": "Web Audio positional coastal wave ambience loop"
+    }
+  ]
+}

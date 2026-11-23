@@ -1,10 +1,27 @@
 import { Room, type Client, type Rewind, type RewindView } from '@colyseus/core';
 import { applyInput } from '../../shared/applyInput';
-import { ENGINE, type SocketType } from '../../shared/engine';
-import { buildRadialIslandLayout, PASS1_ISLAND_CONFIG, validateIslandConfig, type IslandConfig } from '../../shared/islandConfig';
+import { ENGINE, type RoomPhase, type SocketType, type WeatherKind } from '../../shared/engine';
+import {
+  buildRadialIslandLayout,
+  PASS1_ISLAND_CONFIG,
+  validateIslandConfig,
+  type IslandConfig,
+} from '../../shared/islandConfig';
 import { ITEM_REGISTRY, type SlotKind } from '../../shared/itemRegistry';
+import {
+  clampToDockBounds,
+  getTeamIndexFromId,
+  getTeamShoreLandingPoint,
+  sampleBoatPath,
+} from '../../shared/marina';
 import { MOVE_INPUT_SANITIZE, MoveInput, type MoveInputState } from '../../shared/MoveInput';
-import { IslandState, PlayerSchema, TrapSchema, type IslandRoomState, type PlayerState } from '../../shared/schema';
+import {
+  IslandState,
+  PlayerSchema,
+  TrapSchema,
+  type IslandRoomState,
+  type PlayerState,
+} from '../../shared/schema';
 import { BotController } from '../../src/entities/BotController';
 import { buildOnSocket, isValidSocketType } from '../../src/systems/BaseSystem';
 import {
@@ -41,6 +58,13 @@ interface UnitRuntime {
   prevTrap: boolean;
 }
 
+export interface WeatherSpec {
+  readonly kind: WeatherKind;
+  readonly wind: number;
+  readonly fogDensity: number;
+  readonly rainIntensity: number;
+}
+
 export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputState }> {
   public declare inputs: ReturnType<Room<{ state: IslandRoomState; input: MoveInputState }>['defineInput']>;
   public rewind!: Rewind;
@@ -50,6 +74,12 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   private readonly runtimeByUnit = new Map<string, UnitRuntime>();
   private readonly trapMeta = new Map<string, ServerTrapMeta>();
   private trapSeq = 0;
+
+  private phaseElapsedSec = 0;
+  private sailingProgress = 0;
+  private weatherElapsedSec = 0;
+  private weatherCycleIndex = 1; // starts at overcast
+  private readonly sailingRoster = new Set<string>();
 
   onCreate(options?: { islandConfig?: Partial<IslandConfig> }): void {
     const config = options?.islandConfig
@@ -86,21 +116,43 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
 
   onJoin(client: Client): void {
     const teamId = this.pickBalancedTeam();
-    const spawn = this.getSpawnPointForTeam(teamId, 2.5);
-
     const player = new PlayerSchema();
     player.id = client.sessionId;
     player.teamId = teamId;
     player.isBot = false;
-    player.x = spawn.x;
-    player.y = 0;
-    player.z = spawn.z;
-    player.rotY = Math.atan2(-spawn.x, -spawn.z);
     player.hp = ENGINE.playerMaxHp;
     player.maxHp = ENGINE.playerMaxHp;
     player.shieldHp = 0;
     player.alive = true;
     player.activeWeaponIndex = 0;
+
+    if (this.state.phase === 'match') {
+      const spawn = this.getSpawnPointForTeam(teamId, 2.5);
+      player.x = spawn.x;
+      player.y = 0;
+      player.z = spawn.z;
+      player.rotY = Math.atan2(-spawn.x, -spawn.z);
+      player.landed = true;
+      player.boatId = '';
+    } else if (this.state.phase === 'sailing' || this.state.phase === 'landing') {
+      const boat = this.state.boats.get(`boat_${teamId}`);
+      player.x = boat ? boat.x : ENGINE.marina.centerX;
+      player.y = boat ? boat.y + 0.5 : ENGINE.marina.deckY;
+      player.z = boat ? boat.z : ENGINE.marina.centerZ;
+      player.rotY = boat ? boat.rotY : 0;
+      player.landed = false;
+      player.boatId = boat ? boat.id : '';
+      if (boat) this.sailingRoster.add(client.sessionId);
+    } else {
+      // dock or boarding: spawn on shared marina dock
+      const dockSpawn = this.getDockSpawnPoint(teamId);
+      player.x = dockSpawn.x;
+      player.y = ENGINE.marina.deckY;
+      player.z = dockSpawn.z;
+      player.rotY = 0;
+      player.landed = false;
+      player.boatId = '';
+    }
 
     equipItem(player, 'weapon', 0, { itemId: 'plasma_carbine', level: 1, modifiers: [] });
     equipItem(player, 'skill', 0, { itemId: 'gale_dash', level: 1, modifiers: [] });
@@ -113,6 +165,7 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   onLeave(client: Client): void {
     this.state.players.delete(client.sessionId);
     this.runtimeByUnit.delete(client.sessionId);
+    this.sailingRoster.delete(client.sessionId);
   }
 
   public getLastSeenBy(shooterId: string): RewindView {
@@ -126,7 +179,171 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
     return this.rewind.lastSeenBy(shooterId);
   }
 
+  public setWeather(spec: WeatherSpec): { ok: true } | { ok: false; error: string } {
+    if (!(ENGINE.weatherKinds as readonly string[]).includes(spec.kind)) {
+      return { ok: false, error: `Invalid weather kind: ${String(spec.kind)}` };
+    }
+    const { wind, fogDensity, rainIntensity } = spec;
+    const b = ENGINE.weatherBounds;
+    if (!Number.isFinite(wind) || wind < b.wind.min || wind > b.wind.max) {
+      return { ok: false, error: `Weather wind out of bounds [${b.wind.min}, ${b.wind.max}]` };
+    }
+    if (!Number.isFinite(fogDensity) || fogDensity < b.fogDensity.min || fogDensity > b.fogDensity.max) {
+      return { ok: false, error: `Weather fogDensity out of bounds [${b.fogDensity.min}, ${b.fogDensity.max}]` };
+    }
+    if (!Number.isFinite(rainIntensity) || rainIntensity < b.rainIntensity.min || rainIntensity > b.rainIntensity.max) {
+      return { ok: false, error: `Weather rainIntensity out of bounds [${b.rainIntensity.min}, ${b.rainIntensity.max}]` };
+    }
+
+    this.state.weather.kind = spec.kind;
+    this.state.weather.wind = wind;
+    this.state.weather.fogDensity = fogDensity;
+    this.state.weather.rainIntensity = rainIntensity;
+    return { ok: true };
+  }
+
+  public boardPlayer(unitId: string): { ok: true } | { ok: false; error: string } {
+    if (this.state.phase !== 'boarding') {
+      return { ok: false, error: 'Boarding is only allowed during boarding phase' };
+    }
+    const unit = this.state.players.get(unitId);
+    if (!unit || unit.id.startsWith('helper_')) {
+      return { ok: false, error: 'Unit cannot board a boat' };
+    }
+    const boat = this.state.boats.get(`boat_${unit.teamId}`);
+    if (!boat) {
+      return { ok: false, error: `No boat for team ${unit.teamId}` };
+    }
+    unit.boatId = boat.id;
+    unit.landed = false;
+    unit.x = boat.x;
+    unit.y = boat.y + 0.55;
+    unit.z = boat.z;
+    unit.rotY = boat.rotY;
+    return { ok: true };
+  }
+
+  public boardAllPendingPlayers(): { ok: true } | { ok: false; error: string } {
+    if (this.state.phase !== 'boarding') {
+      return { ok: false, error: 'Not in boarding phase' };
+    }
+    for (const unit of this.state.players.values()) {
+      if (unit.id.startsWith('helper_')) continue;
+      if (!unit.boatId) {
+        const res = this.boardPlayer(unit.id);
+        if (!res.ok) return res;
+      }
+    }
+    return { ok: true };
+  }
+
+  public advanceBoatsToShore(): void {
+    this.sailingProgress = 1;
+    this.updateBoatsAlongPath(1);
+  }
+
+  public completeBoatLandings(): void {
+    const cfg = this.state.islandConfig;
+    let slotOffset = 0;
+
+    for (const unit of this.state.players.values()) {
+      if (unit.id.startsWith('helper_')) continue;
+      if (unit.boatId || !unit.landed) {
+        const landing = getTeamShoreLandingPoint(cfg, unit.teamId);
+        const angleSpread = (slotOffset % 6) * ((Math.PI * 2) / 6);
+        const radialOffset = slotOffset === 0 ? 0 : Math.min(2.2, ENGINE.landingRadius * 0.35);
+        unit.x = landing.x + Math.cos(angleSpread) * radialOffset;
+        unit.z = landing.z + Math.sin(angleSpread) * radialOffset;
+        unit.y = 0;
+        unit.rotY = Math.atan2(-unit.x, -unit.z);
+        unit.boatId = '';
+        unit.landed = true;
+        slotOffset++;
+      }
+    }
+  }
+
+  public tryAdvancePhase(nextPhase: RoomPhase): { ok: true } | { ok: false; error: string } {
+    const order = ENGINE.phaseOrder as readonly string[];
+    const curIdx = order.indexOf(this.state.phase);
+    const nextIdx = order.indexOf(nextPhase);
+    if (nextIdx === -1) {
+      return { ok: false, error: `Invalid phase: ${String(nextPhase)}` };
+    }
+    if (nextIdx !== curIdx + 1) {
+      return {
+        ok: false,
+        error: `Illegal phase transition ${this.state.phase} -> ${nextPhase}`,
+      };
+    }
+
+    if (nextPhase === 'sailing') {
+      // Every non-helper player currently in the room must be on their own team's boat
+      for (const unit of this.state.players.values()) {
+        if (unit.id.startsWith('helper_')) continue;
+        const expectedBoatId = `boat_${unit.teamId}`;
+        if (!unit.boatId || unit.boatId !== expectedBoatId) {
+          return { ok: false, error: `Player ${unit.id} has not boarded ${expectedBoatId}` };
+        }
+      }
+      this.sailingRoster.clear();
+      for (const unit of this.state.players.values()) {
+        if (!unit.id.startsWith('helper_')) {
+          this.sailingRoster.add(unit.id);
+        }
+      }
+      this.sailingProgress = 0;
+    }
+
+    if (nextPhase === 'match') {
+      for (const unitId of this.sailingRoster) {
+        const unit = this.state.players.get(unitId);
+        if (unit && !unit.landed) {
+          return { ok: false, error: `Player ${unitId} has not landed yet` };
+        }
+      }
+      for (const unit of this.state.players.values()) {
+        if (!unit.id.startsWith('helper_') && !unit.landed) {
+          return { ok: false, error: `Player ${unit.id} has not landed yet` };
+        }
+      }
+    }
+
+    this.state.phase = nextPhase;
+    this.phaseElapsedSec = 0;
+    return { ok: true };
+  }
+
+  /**
+   * Walks legally step-by-step through dock -> boarding -> sailing -> landing -> match
+   * for integration tests that begin directly in match phase without skipping transitions.
+   */
+  public advancePhaseForTest(target: RoomPhase): void {
+    const order = ENGINE.phaseOrder;
+    const targetIdx = order.indexOf(target);
+    if (targetIdx === -1) {
+      throw new Error(`Invalid target phase: ${String(target)}`);
+    }
+    while (order.indexOf(this.state.phase as RoomPhase) < targetIdx) {
+      const next = order[order.indexOf(this.state.phase as RoomPhase) + 1];
+      if (next === 'sailing') {
+        this.boardAllPendingPlayers();
+      } else if (next === 'landing') {
+        this.advanceBoatsToShore();
+      } else if (next === 'match') {
+        this.completeBoatLandings();
+      }
+      const res = this.tryAdvancePhase(next);
+      if (!res.ok) {
+        throw new Error(`Failed advancing to ${next}: ${res.error}`);
+      }
+    }
+  }
+
   public handleOpenCrate(sessionId: string, crateId: string) {
+    if (this.state.phase !== 'match') {
+      return { ok: false as const, error: 'Crates cannot be opened before match phase' };
+    }
     const player = this.state.players.get(sessionId);
     if (!player || !player.alive) {
       return { ok: false as const, error: 'Player unavailable' };
@@ -153,11 +370,23 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
     requestedType: SocketType,
     targetTier: number,
   ) {
+    if (this.state.phase !== 'match') {
+      return { ok: false as const, error: 'Building is not allowed before match phase' };
+    }
     const player = this.state.players.get(sessionId);
     if (!player || !player.alive) {
       return { ok: false as const, error: 'Player unavailable' };
     }
     const base = this.state.bases.get(player.teamId);
+    const socket = base?.sockets.get(socketId);
+    if (!base || !socket) {
+      return { ok: false as const, error: `Socket not found: ${socketId}` };
+    }
+    const dist = Math.hypot(socket.x - player.x, socket.z - player.z);
+    if (dist > ENGINE.baseBuildRange) {
+      return { ok: false as const, error: 'Socket out of build range' };
+    }
+
     const res = buildOnSocket(base, socketId, player.teamId, requestedType, targetTier, this.matchLog);
     if (res.ok) {
       awardPoints(this.state, player.teamId, 'upgrade');
@@ -212,6 +441,7 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   }
 
   public checkTraps(): void {
+    if (this.state.phase !== 'match') return;
     const triggeredIds: string[] = [];
 
     for (const [trapId, trap] of this.state.traps.entries()) {
@@ -258,7 +488,7 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   }
 
   public applyServerDamage(attackerId: string, targetId: string, rawDamage: number): boolean {
-    if (this.state.phase === 'ended') return false;
+    if (this.state.phase !== 'match') return false;
     if (!Number.isFinite(rawDamage) || rawDamage <= 0) return false;
 
     const target = this.state.players.get(targetId);
@@ -295,7 +525,6 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
 
       if (attacker) {
         awardPoints(this.state, attacker.teamId, 'tag');
-        // Check squad wipe bonus: all members of target's team currently down
         const anyTeamAlive = Array.from(this.state.players.values()).some(
           (p) => p.teamId === target.teamId && p.alive,
         );
@@ -311,12 +540,22 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   private step(dt: number, subSteps: number, subDt: number): void {
     if (this.state.phase === 'ended') return;
 
+    this.phaseElapsedSec += dt;
+    this.stepWeatherCycle(dt);
+
+    const radius = this.state.islandConfig.radius;
+    const dtMs = dt * 1000;
+
+    // Pre-match phase orchestration (dock -> boarding -> sailing -> landing -> match)
+    if (this.state.phase !== 'match') {
+      this.stepPreMatch(dt, subSteps, subDt, radius);
+      return;
+    }
+
+    // Active match clock decrements ONLY during match phase after all have landed
     this.state.matchTimeRemaining = Math.max(0, this.state.matchTimeRemaining - dt);
     evaluateMatchEnd(this.state);
-    if (this.state.phase === 'ended') return;
-
-    const dtMs = dt * 1000;
-    const radius = this.state.islandConfig.radius;
+    if ((this.state.phase as string) === 'ended') return;
 
     // 1. Update timers & respawns for all units
     for (const unit of this.state.players.values()) {
@@ -340,6 +579,8 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
           unit.hp = unit.maxHp;
           unit.shieldHp = 0;
           unit.alive = true;
+          unit.landed = true;
+          unit.boatId = '';
         }
       }
     }
@@ -405,6 +646,142 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
     this.checkTraps();
   }
 
+  private stepPreMatch(dt: number, subSteps: number, subDt: number, radius: number): void {
+    // Base-helper NPCs still patrol their bases at 60 Hz during pre-match
+    for (let s = 0; s < subSteps; s++) {
+      this.stepHelpersOnly(subDt, radius);
+    }
+
+    // Consume human player inputs during dock & boarding so movement/prediction stays live on the dock
+    const activeCommands = new Map<string, MoveInputState>();
+    for (const [sessionId, player] of this.state.players.entries()) {
+      if (player.isBot) continue;
+      const cmd = this.inputs.get(sessionId).next() as MoveInputState | undefined;
+      if (cmd) {
+        activeCommands.set(sessionId, cmd);
+      }
+    }
+
+    if (this.state.phase === 'dock' || this.state.phase === 'boarding') {
+      for (let s = 0; s < subSteps; s++) {
+        for (const [sessionId, cmd] of activeCommands.entries()) {
+          const player = this.state.players.get(sessionId);
+          if (!player || player.boatId) continue;
+          // Move freely on dock deck and clamp strictly inside dock bounds
+          const tempRadius = Math.max(radius, Math.hypot(ENGINE.marina.centerX, ENGINE.marina.centerZ) + 40);
+          applyInput(player, cmd, subDt, tempRadius, 1);
+          clampToDockBounds(player);
+        }
+      }
+
+      if (this.state.phase === 'boarding') {
+        // Allow players pressing interact to board their team boat
+        for (const [sessionId, cmd] of activeCommands.entries()) {
+          const player = this.state.players.get(sessionId);
+          if (!player || player.boatId) continue;
+          const rt = this.getRuntime(sessionId);
+          if (cmd.interact && !rt.prevInteract) {
+            this.boardPlayer(sessionId);
+          }
+          rt.prevInteract = Boolean(cmd.interact);
+        }
+
+        // Roaming bots board their team boats during boarding
+        for (const unit of this.state.players.values()) {
+          if (unit.isBot && !unit.id.startsWith('helper_') && !unit.boatId) {
+            this.boardPlayer(unit.id);
+          }
+        }
+
+        // Auto-board remaining human players at end of ENGINE.boardingDurationSec
+        if (this.phaseElapsedSec >= ENGINE.boardingDurationSec) {
+          this.boardAllPendingPlayers();
+        }
+
+        // Advance to sailing once every non-helper unit is aboard its team's boat
+        const allBoarded = Array.from(this.state.players.values()).every(
+          (u) => u.id.startsWith('helper_') || Boolean(u.boatId),
+        );
+        if (allBoarded && this.phaseElapsedSec >= 0.5) {
+          this.tryAdvancePhase('sailing');
+        }
+      } else if (this.state.phase === 'dock') {
+        if (this.phaseElapsedSec >= ENGINE.dockDurationSec) {
+          this.tryAdvancePhase('boarding');
+        }
+      }
+    } else if (this.state.phase === 'sailing') {
+      this.sailingProgress = Math.min(1, this.sailingProgress + dt / Math.max(0.5, ENGINE.sailingDurationSec));
+      this.updateBoatsAlongPath(this.sailingProgress);
+      if (this.sailingProgress >= 1) {
+        this.tryAdvancePhase('landing');
+      }
+    } else if (this.state.phase === 'landing') {
+      this.updateBoatsAlongPath(1);
+      if (this.phaseElapsedSec >= ENGINE.landingDurationSec) {
+        this.completeBoatLandings();
+        this.tryAdvancePhase('match');
+      }
+    }
+  }
+
+  private stepHelpersOnly(subDt: number, radius: number): void {
+    // Only base helpers patrol on the island during pre-match; roaming bots stay on dock/boat
+    for (const unit of this.state.players.values()) {
+      if (!unit.isBot || !unit.id.startsWith('helper_') || !unit.alive) continue;
+      const ownBase = this.state.bases.get(unit.teamId);
+      if (!ownBase) continue;
+      const t = this.clock.elapsedTime * 0.00055;
+      const orbitR = Math.min(6.0, ENGINE.helperLeashRadius * 0.45);
+      const tx = ownBase.x + Math.cos(t) * orbitR;
+      const tz = ownBase.z + Math.sin(t) * orbitR;
+      const dx = tx - unit.x;
+      const dz = tz - unit.z;
+      const d = Math.hypot(dx, dz);
+      if (d > 0.1) {
+        applyInput(unit, { moveX: dx / d, moveZ: dz / d, rotY: Math.atan2(dx, dz) }, subDt, radius, 0.65);
+      }
+    }
+  }
+
+  private updateBoatsAlongPath(progress01: number): void {
+    const cfg = this.state.islandConfig;
+    for (const boat of this.state.boats.values()) {
+      const idx = getTeamIndexFromId(boat.teamId);
+      const pose = sampleBoatPath(idx, cfg.teamCount, cfg, progress01);
+      boat.x = pose.x;
+      boat.y = pose.y;
+      boat.z = pose.z;
+      boat.rotY = pose.rotY;
+    }
+
+    // Carry boarded players along with their team boat
+    for (const unit of this.state.players.values()) {
+      if (!unit.boatId) continue;
+      const boat = this.state.boats.get(unit.boatId);
+      if (!boat) continue;
+      unit.x = boat.x;
+      unit.y = boat.y + 0.55;
+      unit.z = boat.z;
+      unit.rotY = boat.rotY;
+    }
+  }
+
+  private stepWeatherCycle(dt: number): void {
+    this.weatherElapsedSec += dt;
+    if (this.weatherElapsedSec < ENGINE.weatherHoldDurationSec) return;
+    this.weatherElapsedSec = 0;
+    this.weatherCycleIndex = (this.weatherCycleIndex + 1) % ENGINE.weatherKinds.length;
+    const nextKind = ENGINE.weatherKinds[this.weatherCycleIndex];
+    const preset = ENGINE.weatherPresets[nextKind];
+    this.setWeather({
+      kind: nextKind,
+      wind: preset.wind,
+      fogDensity: preset.fogDensity,
+      rainIntensity: preset.rainIntensity,
+    });
+  }
+
   private processPlayerAttack(sessionId: string, player: PlayerState, rt: UnitRuntime): void {
     const slotIdx = Math.min(player.activeWeaponIndex, Math.max(0, player.weaponSlots.length - 1));
     const weapon = player.weaponSlots[slotIdx];
@@ -416,7 +793,6 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
     const dirX = Math.sin(player.rotY);
     const dirZ = Math.cos(player.rotY);
 
-    // Lag-compensated hit detection via rewind.lastSeenBy wrapper
     const seen = this.getLastSeenBy(sessionId);
 
     let bestTargetId: string | null = null;
@@ -443,7 +819,6 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
       return;
     }
 
-    // Check enemy base core hit
     for (const base of this.state.bases.values()) {
       if (base.teamId === player.teamId || base.coreHp <= 0) continue;
       const dx = base.x - player.x;
@@ -475,7 +850,6 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
     } else if (def.subKind === 'shield_bubble') {
       player.shieldHp = Math.max(player.shieldHp, stats.shieldHp);
     } else if (def.subKind === 'turret') {
-      // Immediate turret pulse against nearest enemy in range
       let nearest: PlayerState | null = null;
       let nearestDist = stats.range;
       for (const other of this.state.players.values()) {
@@ -515,7 +889,6 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   }
 
   private processPlayerInteract(sessionId: string, player: PlayerState): void {
-    // 1. Try nearest unopened crate in range
     let bestCrateId: string | null = null;
     let bestCrateDist: number = ENGINE.crateInteractRange;
     for (const crate of this.state.crates.values()) {
@@ -531,7 +904,6 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
       return;
     }
 
-    // 2. Try nearest upgradeable socket on own base in range
     const ownBase = this.state.bases.get(player.teamId);
     if (!ownBase) return;
     let bestSock: { id: string; type: SocketType; nextTier: number } | null = null;
@@ -552,7 +924,7 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
 
   private spawnInitialBotsAndHelpers(): void {
     for (const [teamId, base] of this.state.bases.entries()) {
-      // Base-helper NPC (one per base, id = helper_${teamId})
+      // Base-helper NPC starts at own base (landed = true, does not block sailing/landing)
       const helperId = `helper_${teamId}`;
       const helper = new PlayerSchema();
       helper.id = helperId;
@@ -566,24 +938,29 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
       helper.hp = ENGINE.playerMaxHp;
       helper.maxHp = ENGINE.playerMaxHp;
       helper.alive = true;
+      helper.landed = true;
+      helper.boatId = '';
       equipItem(helper, 'weapon', 0, { itemId: 'plasma_carbine', level: 1, modifiers: [] });
       this.state.players.set(helperId, helper);
       this.runtimeByUnit.set(helperId, this.createRuntime());
 
-      // Roaming skirmish bots per team
+      // Roaming bots start on the marina dock and board/sail with their team
       for (let i = 0; i < ENGINE.roamingBotsPerTeam; i++) {
         const botId = `bot_${teamId}_${i}`;
         const bot = new PlayerSchema();
         bot.id = botId;
         bot.teamId = teamId;
         bot.isBot = true;
-        bot.x = base.x + Math.cos(inwardAngle) * 8.5;
-        bot.y = 0;
-        bot.z = base.z + Math.sin(inwardAngle) * 8.5;
-        bot.rotY = Math.atan2(-base.x, -base.z);
+        const dockPt = this.getDockSpawnPoint(teamId, i + 1);
+        bot.x = dockPt.x;
+        bot.y = ENGINE.marina.deckY;
+        bot.z = dockPt.z;
+        bot.rotY = 0;
         bot.hp = ENGINE.playerMaxHp;
         bot.maxHp = ENGINE.playerMaxHp;
         bot.alive = true;
+        bot.landed = false;
+        bot.boatId = '';
         equipItem(bot, 'weapon', 0, { itemId: 'plasma_carbine', level: 1, modifiers: [] });
         equipItem(bot, 'skill', 0, { itemId: 'gale_dash', level: 1, modifiers: [] });
         this.state.players.set(botId, bot);
@@ -593,6 +970,13 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
   }
 
   private registerMessageHandlers(): void {
+    this.onMessage('board_boat', (client) => {
+      const res = this.boardPlayer(client.sessionId);
+      if (!res.ok) {
+        client.send('action_error', { error: res.error });
+      }
+    });
+
     this.onMessage('open_crate', (client, payload: { crateId?: unknown }) => {
       if (typeof payload?.crateId !== 'string') {
         client.send('action_error', { error: 'Invalid crateId' });
@@ -705,6 +1089,16 @@ export class IslandRoom extends Room<{ state: IslandRoomState; input: MoveInputS
       }
     }
     return bestTeam;
+  }
+
+  private getDockSpawnPoint(teamId: string, laneOffset = 0): { x: number; z: number } {
+    const idx = getTeamIndexFromId(teamId);
+    const teamCount = this.state.islandConfig.teamCount;
+    const offset = (idx - (teamCount - 1) / 2) * ENGINE.marina.slipSpacing * 0.75;
+    return {
+      x: ENGINE.marina.centerX + offset,
+      z: ENGINE.marina.centerZ - 1.5 - laneOffset * 1.4,
+    };
   }
 
   private getSpawnPointForTeam(teamId: string, inwardOffset: number): { x: number; z: number } {
