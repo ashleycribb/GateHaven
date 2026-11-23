@@ -1,27 +1,22 @@
 import React, { useRef, useState } from 'react';
-import { ArrowUp, Flame, Hammer, Hand, Pickaxe } from 'lucide-react';
-import { WorldMode } from '../types/blockhaven';
+import { Crosshair, Flame, Hand, ShieldAlert } from 'lucide-react';
 
 interface TouchControlsProps {
   visible: boolean;
-  worldMode: WorldMode;
   onJoystickMove: (x: number, y: number) => void;
-  onJump: () => void;
-  onBreak: () => void;
-  onPlace: () => void;
+  onAttack: () => void;
+  onSkill: () => void;
+  onTrap: () => void;
   onInteract: () => void;
-  onCastSkill: () => void;
 }
 
 export const TouchControls: React.FC<TouchControlsProps> = ({
   visible,
-  worldMode,
   onJoystickMove,
-  onJump,
-  onBreak,
-  onPlace,
+  onAttack,
+  onSkill,
+  onTrap,
   onInteract,
-  onCastSkill,
 }) => {
   const padRef = useRef<HTMLDivElement>(null);
   const [knob, setKnob] = useState({ x: 0, y: 0 });
@@ -56,7 +51,6 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-24 z-20 flex items-end justify-between px-4 sm:px-6">
-      {/* Left Virtual Movement Joystick */}
       <div
         ref={padRef}
         onTouchStart={(e) => {
@@ -89,58 +83,46 @@ export const TouchControls: React.FC<TouchControlsProps> = ({
         />
       </div>
 
-      {/* Right Action Buttons */}
       <div className="pointer-events-auto flex flex-col items-end gap-2">
-        {worldMode === 'play' && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onInteract}
-              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-[#D4A65C]/75 bg-[#2A221B]/92 text-[#F3E9D6] shadow-lg active:scale-95"
-              aria-label="Interact"
-            >
-              <Hand className="h-4 w-4 text-[#D4A65C]" />
-              <span className="text-[9px] font-bold">Use</span>
-            </button>
-            <button
-              type="button"
-              onClick={onCastSkill}
-              className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-[#C8844A]/75 bg-[#5E371E]/92 text-[#FDF3E3] shadow-lg active:scale-95"
-              aria-label="Cast skill"
-            >
-              <Flame className="h-4 w-4" />
-              <span className="text-[9px] font-bold">Skill</span>
-            </button>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onInteract}
+            className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-[#D4A65C]/75 bg-[#2A221B]/92 text-[#F3E9D6] shadow-lg active:scale-95"
+            aria-label="Loot or Build"
+          >
+            <Hand className="h-4 w-4 text-[#D4A65C]" />
+            <span className="text-[9px] font-bold">Use</span>
+          </button>
+          <button
+            type="button"
+            onClick={onTrap}
+            className="flex h-12 w-12 flex-col items-center justify-center rounded-full border-2 border-[#BFA882]/75 bg-[#463829]/92 text-[#F3E9D6] shadow-lg active:scale-95"
+            aria-label="Place trap"
+          >
+            <ShieldAlert className="h-4 w-4" />
+            <span className="text-[9px] font-bold">Trap</span>
+          </button>
+        </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={onBreak}
-            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-[#C47467]/75 bg-[#6E3029]/92 text-[#FDF3E3] shadow-lg active:scale-95"
-            aria-label="Attack or break block"
+            onClick={onSkill}
+            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-[#C8844A]/75 bg-[#5E371E]/92 text-[#FDF3E3] shadow-lg active:scale-95"
+            aria-label="Use skill"
           >
-            <Pickaxe className="h-4 w-4" />
-            <span className="text-[9px] font-bold">{worldMode === 'play' ? 'Hit' : 'Erase'}</span>
+            <Flame className="h-4 w-4" />
+            <span className="text-[9px] font-bold">Skill</span>
           </button>
           <button
             type="button"
-            onClick={onPlace}
-            className="flex h-13 w-13 flex-col items-center justify-center rounded-full border-2 border-[#BFA882]/75 bg-[#463829]/92 text-[#F3E9D6] shadow-lg active:scale-95"
-            aria-label="Place block"
+            onClick={onAttack}
+            className="flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 border-[#C47467]/75 bg-[#6E3029]/92 text-[#FDF3E3] shadow-lg active:scale-95"
+            aria-label="Attack"
           >
-            <Hammer className="h-4 w-4" />
-            <span className="text-[9px] font-bold">Place</span>
-          </button>
-          <button
-            type="button"
-            onClick={onJump}
-            className="flex h-14 w-14 flex-col items-center justify-center rounded-full border-2 border-[#A4C191]/80 bg-[#3C5336]/92 text-[#F3E9D6] shadow-lg active:scale-95"
-            aria-label="Jump"
-          >
-            <ArrowUp className="h-5 w-5" />
-            <span className="text-[9px] font-bold">{worldMode === 'create' ? 'Rise' : 'Jump'}</span>
+            <Crosshair className="h-5 w-5" />
+            <span className="text-[9px] font-bold">Fire</span>
           </button>
         </div>
       </div>

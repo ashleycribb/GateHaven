@@ -1,0 +1,9 @@
+{
+  "teamCount": 2,
+  "radius": 80,
+  "centerRadius": 16,
+  "baseRadius": 56,
+  "outerCrateCount": 8,
+  "midCrateCount": 6,
+  "centerCrateCount": 4
+}

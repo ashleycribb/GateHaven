@@ -1,34 +1,30 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { SystemNotice } from '../types/blockhaven';
 
-interface SystemToastStackProps {
-  notices: SystemNotice[];
-  onDismiss: (id: string) => void;
-  belowMinimap?: boolean;
+export interface HudNotice {
+  id: string;
+  tone: 'info' | 'score' | 'warning' | 'alert';
+  title: string;
+  body: string;
 }
 
-const TONE_STYLES: Record<SystemNotice['tone'], { border: string; kicker: string; kickerLabel: string }> = {
-  system: { border: 'border-[#7E6A4F]', kicker: 'text-[#D4A65C]', kickerLabel: 'Chronicle' },
-  level: { border: 'border-[#C99A4E]', kicker: 'text-[#E3B86A]', kickerLabel: 'Level Up' },
-  quest: { border: 'border-[#6A8C5D]', kicker: 'text-[#9BC089]', kickerLabel: 'Quest Update' },
-  warning: { border: 'border-[#B66A38]', kicker: 'text-[#DF9A62]', kickerLabel: 'Warning' },
-  death: { border: 'border-[#9F453B]', kicker: 'text-[#DC8477]', kickerLabel: 'Shrine Recall' },
+interface SystemToastStackProps {
+  notices: HudNotice[];
+  onDismiss: (id: string) => void;
+}
+
+const TONE_STYLES: Record<HudNotice['tone'], { border: string; kicker: string; kickerLabel: string }> = {
+  info: { border: 'border-[#7E6A4F]', kicker: 'text-[#D4A65C]', kickerLabel: 'Island Feed' },
+  score: { border: 'border-[#6A8C5D]', kicker: 'text-[#9BC089]', kickerLabel: 'Score' },
+  warning: { border: 'border-[#B66A38]', kicker: 'text-[#DF9A62]', kickerLabel: 'Notice' },
+  alert: { border: 'border-[#9F453B]', kicker: 'text-[#DC8477]', kickerLabel: 'Alert' },
 };
 
-export const SystemToastStack: React.FC<SystemToastStackProps> = ({
-  notices,
-  onDismiss,
-  belowMinimap = false,
-}) => {
+export const SystemToastStack: React.FC<SystemToastStackProps> = ({ notices, onDismiss }) => {
   if (notices.length === 0) return null;
 
   return (
-    <div
-      className={`pointer-events-none fixed right-3 z-30 flex w-full max-w-xs sm:max-w-sm flex-col gap-2.5 ${
-        belowMinimap ? 'top-[19rem]' : 'top-20'
-      }`}
-    >
+    <div className="pointer-events-none fixed right-3 top-20 z-30 flex w-full max-w-xs sm:max-w-sm flex-col gap-2.5">
       {notices.map((notice) => {
         const style = TONE_STYLES[notice.tone];
         return (
